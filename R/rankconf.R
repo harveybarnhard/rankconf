@@ -4,10 +4,10 @@
 rankconf = function(y,
                     sig2,
                     type="FDR",
-                    method="BH",
                     alpha=0.05,
                     k=NA,
-                    best="min"){
+                    best="min",
+                    thr=1){
   # Handle Input ===============================================================
   if(any(is.na(y) | is.na(sig2) | sig2 <= 0)){
     stop("y and sig2 must not contain NA values, and sig2 must be positive")
@@ -16,10 +16,6 @@ rankconf = function(y,
   # Make sure error types exist
   # TODO: Separate this between error rates and methods to control error rates
   type = toupper(type)
-  method = toupper(method)
-  if(!type%in%c("NAIVE", "BONF", "FDR", "FWER", "KFWER", "KBONF","PFER")){
-    stop("method must be NAIVE, BONF, FDR, FWER, KFWER, PFER")
-  }
 
   n = length(y)
   if(length(sig2)!=n){
@@ -32,21 +28,24 @@ rankconf = function(y,
     y = -y
   }
 
-  # Calculate naive p-values of all differences
-  zscoremat = outer(y, y, '-')/sqrt(outer(sig2, sig2, "+"))
-  pvals = 2*pnorm(-abs(zscoremat[upper.tri(zscoremat)]))
+  # Calculate naive one-sided p-values of all differences
+  diffmat = outer(y, y, '-')/sqrt(outer(sig2, sig2, "+"))
+  pvals = 1-pnorm(diffmat)
 
   # Find which tests to reject using the given method
-  reject = do.call(paste0("rej", type), list(zscoremat, pvals, alpha, k))
-  rejectmat = matrix(NA, nrow=n, ncol=n)
-  rejectmat[upper.tri(rejectmat)] = reject
-  rejectmat[lower.tri(rejectmat)] = t(rejectmat)[lower.tri(rejectmat)]
-  diag(rejectmat) = FALSE
+  reject = do.call(paste0("rej", type), list(diffmat=diffmat,
+                                             pvals=pvals,
+                                             alpha=alpha,
+                                             k=k,
+                                             sig2=sig2,
+                                             y=y,
+                                             thr=thr))
+  diag(reject) = FALSE
 
   # Create a "reject and positive difference" matrix.
   # A TRUE in the [i,j]th index indicates that the ith observation is
   # significantly better than the jth observation.
-  diffpos = (zscoremat > 0) & rejectmat
+  diffpos = (diffmat > 0) & reject & !is.na(diffmat)
 
   # Calculate number of ranks above and below.
   # Summing over the jth column is equivalent to adding up the number of
@@ -62,99 +61,174 @@ rankconf = function(y,
 }
 
 # Naive method (PCER)
-rejNAIVE = function(zscoremat, pvals, alpha, k){
-  return(pvals < alpha)
+rejNAIVE = function(pvals, alpha, ...){
+  return(pvals < alpha/2)
 }
 
 # Bonferroni (FWER)
-rejBONF = function(zscoremat, pvals, alpha, k){
-  return(pvals < alpha/length(pvals))
+rejBONF = function(pvals, alpha, ...){
+  n = nrow(pvals)
+  return(pvals < alpha/(n^2-n))
 }
 
 # Holm-Bonferroni (FWER)
-rejFWER = function(scoremat, pvals, alpha, k){
-  n = length(pvals)
+rejFWER = function(pvals, alpha, ...){
+  n = nrow(pvals)
+  m = n^2 - n
   # Rank pvals from lowest to highest
-  pranks = rank(pvals, ties.method="min")
+  pranks = matrix(rank(pvals, ties.method="min", na.last=T), n, n)
 
   # Find first p value not low enough for rejection, reject everything below
-  min_rank = min(c(pranks[pvals>=alpha/(n+1-pranks)], Inf))
+  min_rank = min(c(pranks[pvals>=alpha/(m +1-pranks)], Inf), na.rm=T)
   return(pranks < min_rank)
 }
 
-# Benjamini-Hochberg (FDR)
-rejFDR = function(zscoremat, pvals, alpha, k){
-  pranks = rank(pvals, ties.method="min")
-  max_rank = max(c(pranks[pvals<=pranks*alpha/length(pvals)], -Inf))
+# Benjamini-Yekutieli (FDR)
+rejFDR = function(pvals, alpha, ...){
+  n = nrow(pvals)
+  m = n^2 - n
+  cm = log(m) -digamma(1) + 1/(2*m)
+  pranks = matrix(rank(pvals, ties.method="min", na.last=T), n, n)
+  max_rank = max(c(pranks[pvals<=pranks*alpha/(m*cm)], -Inf), na.rm=T)
   return(pranks < max_rank)
 }
 
 # Bonferroni (KBONF)
-rejKBONF = function(zscoremat, pvals, alpha, k){
-  return(pvals < k*alpha/length(pvals))
+rejKBONF = function(pvals, alpha, k, ...){
+  n = nrow(pvals)
+  m = n^2 - n
+  return(pvals < k*alpha/m)
 }
 
 # Holm-Bonferroni (KFWER)
-rejKFWER = function(zscoremat, pvals, alpha, k){
-  n = length(pvals)
+rejKFWER = function(pvals, alpha, k, ...){
+  n = nrow(pvals)
+  m = n^2 - n
   # Rank pvals from lowest to highest
-  pranks = rank(pvals, ties.method="min")
+  pranks = matrix(rank(pvals, ties.method="min", na.last=T), n, n)
 
   # Create values against which to compare p values
-  compvals = rep(NA, n)
+  compvals = matrix(NA, n, n)
   ind = pranks<=k
-  compvals[ind]  = k*alpha/n
-  compvals[!ind] = k*alpha/(n+k-pranks[!ind])
+  compvals[ind]  = k*alpha/m
+  compvals[!ind] = k*alpha/(m+k-pranks[!ind])
+  diag(compvals) = NA
 
   # Find first p value not low enough for rejection, reject everything below
-  min_rank = min(pranks[pvals>=compvals])
+  min_rank = min(pranks[pvals>=compvals], na.rm=T)
   return(pranks < min_rank)
 }
 
-# (REKFWER) https://arxiv.org/pdf/0710.2258.pdf Algorithm 2.1
+# (REKFWER) https://arxiv.org/pdf/0710.2258.pdf Algorithm 2.2 ==================
 
 # Function to find the kth largest value of x
 kmax = function(x, k){
-  n = length(x)
-  sort(x, partial=n- k+ 1)[n-k+1]
+  k = min(length(x), k)
+  return(
+    x[kit::topn(x, k)[k]]
+  )
 }
-sampfun = function(x, k){
-  return(kmax(sample(x, size=length(x), replace=TRUE)))
+kmin = function(x, k){
+  k = min(length(x), k)
+  return(
+    x[kit::topn(x, k, decreasing=FALSE)[k]]
+  )
+}
+
+# Function that returns one bootstrap sample
+sampfun = function(sigmat, ind, k, distfun, ...){
+  booty = do.call(distfun, list(...))
+  return(
+    kmax(
+      abs(outer(booty, booty, "-")[ind]/sigmat[ind]),
+      k
+    )
+  )
 }
 # Function to find the bootstrap quantile of the kmax function over
 # specific indices of x
-pkmax = function(x, ind, quant, k, R=1000){
-  # Set of indices
-  kmaxdist = replicate(R, sampfun(x[rejind],k))
-  return(quantile(kmaxdist, prob=quant))
-}
-rejBKFWER = function(zscoremat, pvals, alpha, k){
-  tvals = abs(zscoremat[upper.tri(zscoremat)])
-  reject = rep(0, length(tvals))
+pkmax = function(sigmat, ind, quant, k, R, distfun, thr, ...) with(list(...), {
+  # Make R bootstrap samples, calculating the kth largest
+  # observation in each sample
+  cl = parallel::makeCluster(thr)
+  parallel::clusterExport(
+    cl, varlist=c("sigmat","ind", "quant", "k", "R", "sampfun", "kmax",
+                  names(list(...))),
+    envir=environment()
+  )
+  kmaxdist = parallel::parSapply(
+    cl=cl,
+    X=rep(list(1), R),
+    FUN=function(x) do.call(
+      sampfun,
+      c(
+        list(sigmat=sigmat, ind=ind, k=k, distfun=distfun),
+        list(...)
+      )
+    )
+  )
+  parallel::stopCluster(cl)
 
-  # Step 1
-  crit = pkmax(tvals, reject, 1-alpha, k)
-  if(max(tvals)<=crit){
-    return(reject > 0)
-  }else{
-    ind = tvals > crit
-    newrej = TRUE
-    reject[ind] = 1
-  }
-  if(sum(reject) < k){
-    return(reject > 0)
-  }
+  # Return the quantiile of the distrbution
+  return(quantile(kmaxdist, probs=quant, names=FALSE))
+})
 
-  # Find the k-1 least significant rejections
-  kmax(tvals[reject], k-1)
+# Main function
+rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ...){
+  # Initialize with no rejections
+  reject = matrix(0, nrow=length(sig2), ncol=length(sig2))
+
+  # Test statistics and SDs
+  diffmat = abs(diffmat)
+  diag(diffmat) = NA
+  sigmat = sqrt(outer(sig2, sig2, FUN = "+"))
+
+  # Step 1, calculate 1-alpha critical values
+  #     a) Reject all values greater than critical value
+  #     b) If k or fewer observations are rejected, then stop
+  crit = pkmax(
+    sigmat = sigmat,
+    ind    = !is.na(diffmat),
+    quant  = 1-alpha,
+    k = k, R=R, thr=thr,
+    distfun = distfun, n = nrow(sigmat), sd = sqrt(sig2)
+  )
+  newrej = TRUE
+  reject = diffmat > crit
+  diag(reject) = FALSE
+
+  if(sum(reject, na.rm=TRUE) < k){
+    return(reject > 0)
+  }
+  cat("\r Step 1 Total Rejected", sum(reject>0, na.rm=T))
 
   # Step 2,3,...
   j = 2
   while(newrej){
-    crit = pkmax(tvals, recentrej | !reject, 1-alpha, k)
-    ind = which(reject==0)
-    reject[ind] = j*(tvals[ind] > crit)
-    newrej = any(reject[ind]>0)
+    # Most "recent" k-1 rejections. Equivalently, the k-1 least significant
+    # tests that have already been rejected
+    if(k>1){
+      recentrej = !reject
+    }else{
+      recentrej = reject & (diffmat <= kmin(x=diffmat[reject], k=k-1))
+    }
+
+    # Calculate critical value over unrejected tests and k-1 least significant
+    # tests that have already been rejected
+    crit = pkmax(
+      sigmat = sigmat,
+      ind    = (!reject | recentrej) & !is.na(diffmat),
+      quant  = 1-alpha,
+      k = k, R=R, thr=thr,
+      distfun = distfun, n = nrow(sigmat), sd = sqrt(sig2)
+    )
+    reject[!reject] = j*(diffmat[!reject] > crit)
+    diag(reject) = FALSE
+    if(!any(reject==j)){
+      newrej = FALSE
+    }
+    cat("\r Step",j, "Total Rejected", sum(reject>0, na.rm=T))
+    flush.console()
     j = j + 1
   }
   return(reject > 0)
