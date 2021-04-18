@@ -1,6 +1,9 @@
-
-# TODO: Make this more efficient by just focusing on upper
-#       triangular
+## usethis namespace: start
+#' @importFrom Rcpp sourceCpp
+#' @useDynLib rankconf, .registration = TRUE
+## usethis namespace: end
+NULL
+#> NULL
 rankconf = function(y,
                     sig2,
                     type="FDR",
