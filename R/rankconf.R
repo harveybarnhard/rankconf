@@ -1,16 +1,21 @@
-## usethis namespace: start
-#' @importFrom Rcpp sourceCpp
-#' @useDynLib rankconf, .registration = TRUE
-## usethis namespace: end
-NULL
-#> NULL
+#' Construct confidence intervals around ranks.
+#'
+#' @param y estimates
+#' @param sig2 variance of estimates
+#' @param type What error should be controlled?
+#' @param alpha The rate at which the error should be controlled. 0.05 by default
+#' @param k For k-FWER, number of errors to be bounded
+#' @param best "min" for rank 1 to correspond to lowest estimate.
+#' "max" for rank 1 to correspond to greatest estimate.
+#' @param thr Number of threads to utilize. Number of cores minus one by default
+#' @export
 rankconf = function(y,
                     sig2,
                     type="FDR",
                     alpha=0.05,
                     k=NA,
                     best="min",
-                    thr=1){
+                    thr=parallel::detectCores()-1){
   # Handle Input ===============================================================
   if(any(is.na(y) | is.na(sig2) | sig2 <= 0)){
     stop("y and sig2 must not contain NA values, and sig2 must be positive")
@@ -32,7 +37,7 @@ rankconf = function(y,
   }
 
   # Calculate naive one-sided p-values of all differences
-  diffmat = outer(y, y, '-')/sqrt(outer(sig2, sig2, "+"))
+  diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
   pvals = 1-pnorm(diffmat)
 
   # Find which tests to reject using the given method
@@ -79,7 +84,7 @@ rejFWER = function(pvals, alpha, ...){
   n = nrow(pvals)
   m = n^2 - n
   # Rank pvals from lowest to highest
-  pranks = matrix(rank(pvals, ties.method="min", na.last=T), n, n)
+  pranks = matrix(data.table::frank(c(pvals), ties.method="min", na.last=T), n, n)
 
   # Find first p value not low enough for rejection, reject everything below
   min_rank = min(c(pranks[pvals>=alpha/(m +1-pranks)], Inf), na.rm=T)
@@ -90,8 +95,8 @@ rejFWER = function(pvals, alpha, ...){
 rejFDR = function(pvals, alpha, ...){
   n = nrow(pvals)
   m = n^2 - n
-  cm = log(m) -digamma(1) + 1/(2*m)
-  pranks = matrix(rank(pvals, ties.method="min", na.last=T), n, n)
+  cm = log(m) - digamma(1) + 1/(2*m)
+  pranks = matrix(data.table::frank(c(pvals), ties.method="min", na.last=T), n, n)
   max_rank = max(c(pranks[pvals<=pranks*alpha/(m*cm)], -Inf), na.rm=T)
   return(pranks < max_rank)
 }
@@ -108,7 +113,7 @@ rejKFWER = function(pvals, alpha, k, ...){
   n = nrow(pvals)
   m = n^2 - n
   # Rank pvals from lowest to highest
-  pranks = matrix(rank(pvals, ties.method="min", na.last=T), n, n)
+  pranks = matrix(data.table::frank(c(pvals), ties.method="min", na.last=T), n, n)
 
   # Create values against which to compare p values
   compvals = matrix(NA, n, n)
@@ -128,74 +133,68 @@ rejKFWER = function(pvals, alpha, k, ...){
 kmax = function(x, k){
   k = min(length(x), k)
   return(
-    x[kit::topn(x, k)[k]]
+    x[kit::topn(x, k, decreasing=T)[k]]
   )
 }
 kmin = function(x, k){
   k = min(length(x), k)
   return(
-    x[kit::topn(x, k, decreasing=FALSE)[k]]
+    x[kit::topn(x, k, decreasing=F)[k]]
   )
 }
 
-# Function that returns one bootstrap sample
-sampfun = function(sigmat, ind, k, distfun, ...){
+# Function that returns one bootstrap sample of the kth largest value
+sampfun = function(sigmatind, ind, k, distfun, ...){
   booty = do.call(distfun, list(...))
   return(
     kmax(
-      abs(outer(booty, booty, "-")[ind]/sigmat[ind]),
+      abs(selfouter(booty, "-")[ind]/sigmatind),
       k
     )
   )
 }
-# Function to find the bootstrap quantile of the kmax function over
-# specific indices of x
-pkmax = function(sigmat, ind, quant, k, R, distfun, thr, ...) with(list(...), {
-  # Make R bootstrap samples, calculating the kth largest
-  # observation in each sample
-  cl = parallel::makeCluster(thr)
-  parallel::clusterExport(
-    cl, varlist=c("sigmat","ind", "quant", "k", "R", "sampfun", "kmax",
-                  names(list(...))),
-    envir=environment()
-  )
-  kmaxdist = parallel::parSapply(
-    cl=cl,
-    X=rep(list(1), R),
-    FUN=function(x) do.call(
-      sampfun,
-      c(
-        list(sigmat=sigmat, ind=ind, k=k, distfun=distfun),
-        list(...)
-      )
-    )
-  )
-  parallel::stopCluster(cl)
-
-  # Return the quantiile of the distrbution
-  return(quantile(kmaxdist, probs=quant, names=FALSE))
-})
 
 # Main function
 rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ...){
+  # Parse arguments
+  if(distfun=="rnorm"){
+    distfun = function(sd){
+      Rfast::Rnorm(length(sd), m=0, s=1)*sd
+    }
+  }
+
+  # Initialize cluster for parallel processing
+  cl = parallel::makeCluster(thr)
+  on.exit(parallel::stopCluster(cl))
+
   # Initialize with no rejections
   reject = matrix(0, nrow=length(sig2), ncol=length(sig2))
 
   # Test statistics and SDs
   diffmat = abs(diffmat)
   diag(diffmat) = NA
-  sigmat = sqrt(outer(sig2, sig2, FUN = "+"))
+  sigmat = sqrt(selfouter(sig2, FUN = "+"))
 
   # Step 1, calculate 1-alpha critical values
   #     a) Reject all values greater than critical value
   #     b) If k or fewer observations are rejected, then stop
-  crit = pkmax(
-    sigmat = sigmat,
-    ind    = !is.na(diffmat),
-    quant  = 1-alpha,
-    k = k, R=R, thr=thr,
-    distfun = distfun, n = nrow(sigmat), sd = sqrt(sig2)
+  ind = !is.na(diffmat)
+  n = nrow(sigmat)
+  s = sqrt(sig2)
+  parallel::clusterExport(
+    cl, varlist=c("sigmat","ind", "k", "sampfun", "kmax",
+                  "n", "s","distfun", "selfouter"),
+    envir=environment()
   )
+  kmaxdist = parallel::parSapply(
+    cl=cl,
+    X=rep(list(1), R),
+    FUN=function(x) do.call(
+      sampfun, list(sigmatind=sigmat[ind], ind=ind, k=k, distfun=distfun, sd=s)
+    )
+  )
+  # Return the quantile of the distribution
+  crit = quantile(kmaxdist, probs=1-alpha, names=FALSE)
   newrej = TRUE
   reject = diffmat > crit
   diag(reject) = FALSE
@@ -218,13 +217,20 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
 
     # Calculate critical value over unrejected tests and k-1 least significant
     # tests that have already been rejected
-    crit = pkmax(
-      sigmat = sigmat,
-      ind    = (!reject | recentrej) & !is.na(diffmat),
-      quant  = 1-alpha,
-      k = k, R=R, thr=thr,
-      distfun = distfun, n = nrow(sigmat), sd = sqrt(sig2)
+    ind = (!reject | recentrej) & !is.na(diffmat)
+    parallel::clusterExport(
+      cl, varlist="ind",
+      envir=environment()
     )
+    kmaxdist = parallel::parSapply(
+      cl=cl,
+      X=rep(list(1), R),
+      FUN=function(x) do.call(
+        sampfun, list(sigmatind=sigmat[ind], ind=ind, k=k, distfun=distfun, sd=s)
+      )
+    )
+    # Return the quantile of the distribution
+    crit = quantile(kmaxdist, probs=1-alpha, names=FALSE)
     reject[!reject] = j*(diffmat[!reject] > crit)
     diag(reject) = FALSE
     if(!any(reject==j)){
