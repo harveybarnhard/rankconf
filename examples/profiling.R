@@ -75,6 +75,37 @@ profvis::profvis({
   sampfun(sigmatind, ind, 5, sqrt(df$sig2))
 })
 
+# kmax =========================================================================
+# Function to find the kth largest value of x
+kmax1 = function(x, k){
+  k = min(length(x), k)
+  x[kit::topn(x, k, decreasing=T)[k]]
+}
+kmin1 = function(x, k){
+  k = min(length(x), k)
+  x[kit::topn(x, k, decreasing=F)[k]]
+}
+# Function to find the kth largest value of x
+kmax2 = function(x, k){
+  k = min(length(x), k)
+  p = length(x) - k + 1
+  return(
+    sort(x, partial=p, decreasing=F)[p]
+  )
+}
+kmin2 = function(x, k){
+  k = min(length(x), k)
+  p = length(x) - k + 1
+  return(
+    -sort(-x, partial=p, decreasing=F)[p]
+  )
+}
+
+microbenchmark::microbenchmark(
+  old = kmin1(x,300),
+  new = kmin2(x,300)
+)
+
 # ==============================================================================
 n = 20000
 object.size(matrix(runif(n^2), n, n))

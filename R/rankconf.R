@@ -129,18 +129,23 @@ rejKFWER = function(pvals, alpha, k, ...){
 
 # (REKFWER) https://arxiv.org/pdf/0710.2258.pdf Algorithm 2.2 ==================
 
-# Function to find the kth largest value of x
 kmax = function(x, k){
   k = min(length(x), k)
-  return(
+  if(k > 800){
+    p = length(x) - k + 1
+    sort(x, partial=p, decreasing=F)[p]
+  }else{
     x[kit::topn(x, k, decreasing=T)[k]]
-  )
+  }
 }
 kmin = function(x, k){
   k = min(length(x), k)
-  return(
+  if(k > 800){
+    p = length(x) - k + 1
+    -sort(-x, partial=p, decreasing=F)[p]
+  }else{
     x[kit::topn(x, k, decreasing=F)[k]]
-  )
+  }
 }
 
 # Function that returns one bootstrap sample of the kth largest value
