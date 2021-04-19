@@ -39,7 +39,7 @@ rankconf = function(y,
 
   # Calculate naive one-sided p-values of all differences
   diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
-  if(method!="BKFWER"){
+  if(type!="BKFWER"){
     pvals = 1-pnorm(diffmat)
   }else{
     pvals = NA
