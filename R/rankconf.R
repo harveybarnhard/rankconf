@@ -39,7 +39,11 @@ rankconf = function(y,
 
   # Calculate naive one-sided p-values of all differences
   diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
-  pvals = 1-pnorm(diffmat)
+  if(method!="BKFWER"){
+    pvals = 1-pnorm(diffmat)
+  }else{
+    pvals = NA
+  }
   gc(verbose)
 
   # Find which tests to reject using the given method
