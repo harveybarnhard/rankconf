@@ -211,7 +211,7 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
 
   # Step 2,3,...
   j = 2
-  while(newrej){
+  while(newrej & k>1){
     # Most "recent" k-1 rejections. Equivalently, the k-1 least significant
     # tests that have already been rejected
     if(k>1){
