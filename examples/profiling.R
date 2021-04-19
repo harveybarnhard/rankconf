@@ -105,7 +105,10 @@ microbenchmark::microbenchmark(
 )
 
 # ==============================================================================
-n = 20000
-object.size(matrix(runif(n^2), n, n))
-
+nvec = c(75, 750, 7500)
+res = rep(NA, length(nvec))
+for(i in 1:length(nvec)){
+  n = nvec[i]
+  res[i] = object.size(matrix(runif(n^2), n, n))
+}
 

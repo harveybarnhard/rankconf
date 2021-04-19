@@ -15,7 +15,8 @@ rankconf = function(y,
                     alpha=0.05,
                     k=NA,
                     best="min",
-                    thr=parallel::detectCores()-1){
+                    thr=parallel::detectCores()-1,
+                    verbose=F){
   # Handle Input ===============================================================
   if(any(is.na(y) | is.na(sig2) | sig2 <= 0)){
     stop("y and sig2 must not contain NA values, and sig2 must be positive")
@@ -39,6 +40,7 @@ rankconf = function(y,
   # Calculate naive one-sided p-values of all differences
   diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
   pvals = 1-pnorm(diffmat)
+  gc(verbose)
 
   # Find which tests to reject using the given method
   reject = do.call(paste0("rej", type), list(diffmat=diffmat,
