@@ -2,6 +2,5 @@
 
 export(rankconf)
 export(selfouter)
-export(timesTwo)
 importFrom(Rcpp,sourceCpp)
 useDynLib(rankconf, .registration = TRUE)

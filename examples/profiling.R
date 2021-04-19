@@ -35,23 +35,21 @@ profvis::profvis({
 
 test = list()
 test[["Mogstad"]] = csranks::csranks(-df$yhat, sqrt(df$sig2))
+test[["1-FWER"]] = rankconf(df$yhat, df$sig2, type="BKFWER", k=1, thr=parallel::detectCores()-1)
 test[["10-FWER"]] = rankconf(df$yhat, df$sig2, type="BKFWER", k=10, thr=parallel::detectCores()-1)
 test[["500-FWER"]] = rankconf(df$yhat, df$sig2, type="BKFWER", k=100, thr=parallel::detectCores()-1)
-test[["FDR"]] = rankconf(df$yhat, df$sig2, type="FDR", alpha=0.3)
+test[["FDR"]] = rankconf(df$yhat, df$sig2, type="FDR", alpha=0.05)
 
 ggplot(df, aes(x=rank(yhat), y=rank(y))) +
   geom_point() +
-  geom_smooth(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$L), color="black") +
-  geom_smooth(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$U), color="black") +
-  geom_smooth(mapping=aes(x=rank(df$yhat), y=test[["500-FWER"]]$L), color="blue") +
-  geom_smooth(mapping=aes(x=rank(df$yhat), y=test[["500-FWER"]]$U), color="blue") +
-  geom_smooth(mapping=aes(x=rank(df$yhat), y=test[["FDR"]]$L, color="red")) +
-  geom_smooth(mapping=aes(x=rank(df$yhat), y=test[["FDR"]]$U, color="red")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$L, color="black")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$U, color="black")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["500-FWER"]]$L, color="blue")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["500-FWER"]]$U, color="blue")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["FDR"]]$L, color="red")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["FDR"]]$U, color="red")) +
   theme_classic() +
-  theme(
-    axis.title.x = element_text("Estimated Rank"),
-    axis.title.y = element_text("True Rank")
-  )
+  xlab("Estimated Rank") + ylab("True Rank")
 
 sum(rank(df$y) >= test3$L & df$y <= test3$U)
 # Sampfun ======================================================================

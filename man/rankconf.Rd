@@ -2,7 +2,7 @@
 % Please edit documentation in R/rankconf.R
 \name{rankconf}
 \alias{rankconf}
-\title{Construct confidence intervals around ranks}
+\title{Construct confidence intervals around ranks.}
 \usage{
 rankconf(
   y,
@@ -31,5 +31,5 @@ rankconf(
 \item{thr}{Number of threads to utilize. Number of cores minus one by default}
 }
 \description{
-Construct confidence intervals around ranks
+Construct confidence intervals around ranks.
 }

@@ -30,9 +30,9 @@ rankconf = function(y,
     stop("y and sig2 must be of same length")
   }
   if(best=="min"){
-    message("Rank 1 corresponds to the lowest estimate")
+    message("Rank 1 corresponds to the lowest estimate\n")
   }else if(best=="max"){
-    message("Rank 1 corresponds to the highest estimate")
+    message("Rank 1 corresponds to the highest estimate\n")
     y = -y
   }
 
