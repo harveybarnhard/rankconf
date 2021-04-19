@@ -43,6 +43,7 @@ rankconf = function(y,
     pvals = 1-pnorm(diffmat)
   }else{
     pvals = NA
+    diffmat = abs(diffmat)
   }
   gc(verbose)
 
@@ -182,7 +183,6 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
   reject = matrix(0, nrow=length(sig2), ncol=length(sig2))
 
   # Test statistics and SDs
-  diffmat = abs(diffmat)
   diag(diffmat) = NA
   sigmat = sqrt(selfouter(sig2, FUN = "+"))
 
