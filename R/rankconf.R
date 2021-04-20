@@ -136,31 +136,12 @@ rejKFWER = function(pvals, alpha, k, ...){
 
 # (REKFWER) https://arxiv.org/pdf/0710.2258.pdf Algorithm 2.2 ==================
 
-kmax = function(x, k){
-  k = min(length(x), k)
-  if(k > 800){
-    p = length(x) - k + 1
-    sort(x, partial=p, decreasing=F)[p]
-  }else{
-    x[kit::topn(x, k, decreasing=T)[k]]
-  }
-}
-kmin = function(x, k){
-  k = min(length(x), k)
-  if(k > 800){
-    p = length(x) - k + 1
-    -sort(-x, partial=p, decreasing=F)[p]
-  }else{
-    x[kit::topn(x, k, decreasing=F)[k]]
-  }
-}
-
 # Function that returns one bootstrap sample of the kth largest value
-sampfun = function(sigmatind, ind, k, distfun, ...){
+sampfun = function(sigmat, ind, k, distfun, ...){
   booty = do.call(distfun, list(...))
   return(
     kmax(
-      abs(selfouter(booty, "-")[ind]/sigmatind),
+      abs(selfouter(booty, "-")[ind]/sigmatind[ind]),
       k
     )
   )
@@ -180,7 +161,7 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
   on.exit(parallel::stopCluster(cl))
 
   # Initialize with no rejections
-  reject = matrix(0, nrow=length(sig2), ncol=length(sig2))
+  reject = matrix(F, nrow=length(sig2), ncol=length(sig2))
 
   # Test statistics and SDs
   diag(diffmat) = NA
@@ -201,7 +182,7 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
     cl=cl,
     X=rep(list(1), R),
     FUN=function(x) do.call(
-      sampfun, list(sigmatind=sigmat[ind], ind=ind, k=k, distfun=distfun, sd=s)
+      sampfun, list(sigmat=sigmat, ind=ind, k=k, distfun=distfun, sd=s)
     )
   )
   # Return the quantile of the distribution
@@ -209,6 +190,7 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
   newrej = TRUE
   reject = diffmat > crit
   diag(reject) = FALSE
+  gc()
 
   if(sum(reject, na.rm=TRUE) < k){
     return(reject > 0)
@@ -237,13 +219,15 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
       cl=cl,
       X=rep(list(1), R),
       FUN=function(x) do.call(
-        sampfun, list(sigmatind=sigmat[ind], ind=ind, k=k, distfun=distfun, sd=s)
+        sampfun, list(sigmat=sigmat, ind=ind, k=k, distfun=distfun, sd=s)
       )
     )
     # Return the quantile of the distribution
     crit = quantile(kmaxdist, probs=1-alpha, names=FALSE)
     reject[!reject] = j*(diffmat[!reject] > crit)
     diag(reject) = FALSE
+    gc()
+
     if(!any(reject==j)){
       newrej = FALSE
     }

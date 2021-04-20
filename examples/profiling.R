@@ -23,7 +23,7 @@ simfun = function(n, g, r, nullprop=0){
   return(df)
 }
 
-df = simfun(50, 500, 0.8, nullprop=0)
+df = simfun(50, 750, 0.8, nullprop=0)
 
 profvis::profvis({
   rankconf(df$yhat, df$sig2, type="BKFWER", k=500)
@@ -68,41 +68,77 @@ sampfun = function(sigmatind, ind, k, sd){
     )
   )
 }
-
+sd = sqrt(df$sig2)
+n  = nrow(df)
 profvis::profvis({
-  sampfun(sigmatind, ind, 5, sqrt(df$sig2))
+  sampfun(sigmatind, ind, 800, sd)
 })
-
+profvis::profvis({
+  sampfun(sigmat[ind], ind, nrow(df), sd)
+})
+profvis::profvis({
+  sampfun2(sigmat, ind, nrow(df), sd)
+})
+profvis::profvis({
+  abs(selfouter(df$y, "-")[ind]/sigmatind)
+})
 # kmax =========================================================================
-# Function to find the kth largest value of x
+# k-largest element
 kmax1 = function(x, k){
   k = min(length(x), k)
-  x[kit::topn(x, k, decreasing=T)[k]]
-}
-kmin1 = function(x, k){
-  k = min(length(x), k)
-  x[kit::topn(x, k, decreasing=F)[k]]
-}
-# Function to find the kth largest value of x
-kmax2 = function(x, k){
-  k = min(length(x), k)
-  p = length(x) - k + 1
-  return(
+  if(k > 800){
+    p = length(x) - k + 1
     sort(x, partial=p, decreasing=F)[p]
-  )
-}
-kmin2 = function(x, k){
-  k = min(length(x), k)
-  p = length(x) - k + 1
-  return(
-    -sort(-x, partial=p, decreasing=F)[p]
-  )
+  }else{
+    x[kit::topn(x, k, decreasing=T)[k]]
+  }
 }
 
+# k-smallest element
+kmin1 = function(x, k){
+  k = min(length(x), k)
+  if(k > 800){
+    p = length(x) - k + 1
+    -sort(-x, partial=p, decreasing=F)[p]
+  }else{
+    x[kit::topn(x, k, decreasing=F)[k]]
+  }
+}
+
+# k-largest element
+kmax2 = function(x, k){
+  k = min(length(x), k)
+  partial_sort_dec(x, k)[k]
+}
+
+# k-smallest element
+kmin2 = function(x, k){
+  k = min(length(x), k)
+  partial_sort_inc(x, k)[k]
+}
+
+# k-largest element
+kmax3 = function(x, k){
+  k = min(length(x), k)
+  x[top_i_pq(x, k)[k]]
+}
+
+# k-smallest element
+kmin3 = function(x, k){
+  k = min(length(x), k)
+  -x[top_i_pq(-x, k)[k]]
+}
+
+k=1000
 microbenchmark::microbenchmark(
-  old = kmin1(x,300),
-  new = kmin2(x,300)
+  oldmax = kmax1(df$y, k),
+  newmax = kmax2(df$y, k),
+  newermax = kmax3(df$y, k),
+  oldmin = kmin1(df$y, k),
+  newmin = kmin2(df$y, k),
+  times = 1000
 )
+
 
 # ==============================================================================
 nvec = c(75, 750, 7500)

@@ -1,7 +1,30 @@
-# Faster than using base::outer()
+# k-largest elements
+kmax = function(x, k){
+  k = min(length(x), k)
+  if(k > 800){
+    p = length(x) - k + 1
+    sort(x, partial=p, decreasing=F)[p]
+  }else{
+    x[kit::topn(x, k, decreasing=T)[k]]
+  }
+}
+
+# k-smallest elements
+kmin = function(x, k){
+  k = min(length(x), k)
+  if(k > 800){
+    p = length(x) - k + 1
+    -sort(-x, partial=p, decreasing=F)[p]
+  }else{
+    x[kit::topn(x, k, decreasing=F)[k]]
+  }
+}
+
+
+
+# ~3x as fast relative to base::outer()
 #' @export
 selfouter = function(x, FUN="+"){
   FUN = match.fun(FUN)
-  y = rep(x, rep.int(length(x), length(x)))
-  FUN(x,y)
+  FUN(x, rep(x, rep.int(length(x), length(x))))
 }

@@ -11,7 +11,8 @@ rankconf(
   alpha = 0.05,
   k = NA,
   best = "min",
-  thr = parallel::detectCores() - 1
+  thr = parallel::detectCores() - 1,
+  verbose = F
 )
 }
 \arguments{
