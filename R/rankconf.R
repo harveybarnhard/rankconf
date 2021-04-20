@@ -217,10 +217,10 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
 
   # Step 2,3,...
   j = 2
-  while(newrej & k>1){
+  while(newrej){
     # Most "recent" k-1 rejections. Equivalently, the k-1 least significant
     # tests that have already been rejected
-    if(k>1){
+    if(k==1){
       recentrej = !reject
     }else{
       recentrej = reject & (diffmat <= kmin(x=diffmat[reject], k=k-1))
@@ -247,7 +247,7 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
     if(!any(reject==j)){
       newrej = FALSE
     }
-    cat("\r Step",j, "Total Rejected", sum(reject>0, na.rm=T))
+    cat("\r Step", j)
     flush.console()
     j = j + 1
   }

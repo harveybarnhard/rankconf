@@ -112,3 +112,9 @@ for(i in 1:length(nvec)){
   res[i] = object.size(matrix(runif(n^2), n, n))
 }
 
+# Sparse matrices =============================================================
+library(Matrix)
+n=1000
+m = list()
+m[[1]] = matrix(sample(c(T,F), n^2, replace=T, prob=c(0.5,0.5)), n, n)
+m[[2]] = Matrix(sample(c(T,F), n^2, replace=T, prob=c(0.5,0.5)), n, n)
