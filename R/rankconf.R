@@ -141,7 +141,7 @@ sampfun = function(sigmat, ind, k, distfun, ...){
   booty = do.call(distfun, list(...))
   return(
     kmax(
-      abs(selfouter(booty, "-")[ind]/sigmatind[ind]),
+      abs(selfouter(booty, "-")[ind]/sigmat[ind]),
       k
     )
   )
