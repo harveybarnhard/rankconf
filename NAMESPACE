@@ -2,5 +2,3 @@
 
 export(rankconf)
 export(selfouter)
-importFrom(Rcpp,sourceCpp)
-useDynLib(rankconf, .registration = TRUE)
