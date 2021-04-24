@@ -19,6 +19,6 @@ rejupdate <- function(rejmat, diffmat, c) {
 #' @param k The k in k-FWER
 #' @export
 indupdate <- function(rejmat, indmat, diffmat, c, k) {
-    .Call(`_rankconf_indupdate`, rejmat, indmat, diffmat, c, k)
+    invisible(.Call(`_rankconf_indupdate`, rejmat, indmat, diffmat, c, k))
 }
 

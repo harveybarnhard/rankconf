@@ -20,18 +20,17 @@ BEGIN_RCPP
 END_RCPP
 }
 // indupdate
-int indupdate(LogicalMatrix const& rejmat, LogicalMatrix& indmat, NumericMatrix const& diffmat, double const c, int const k);
+void indupdate(LogicalMatrix const& rejmat, LogicalMatrix& indmat, NumericMatrix const& diffmat, double const c, int const k);
 RcppExport SEXP _rankconf_indupdate(SEXP rejmatSEXP, SEXP indmatSEXP, SEXP diffmatSEXP, SEXP cSEXP, SEXP kSEXP) {
 BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< LogicalMatrix const& >::type rejmat(rejmatSEXP);
     Rcpp::traits::input_parameter< LogicalMatrix& >::type indmat(indmatSEXP);
     Rcpp::traits::input_parameter< NumericMatrix const& >::type diffmat(diffmatSEXP);
     Rcpp::traits::input_parameter< double const >::type c(cSEXP);
     Rcpp::traits::input_parameter< int const >::type k(kSEXP);
-    rcpp_result_gen = Rcpp::wrap(indupdate(rejmat, indmat, diffmat, c, k));
-    return rcpp_result_gen;
+    indupdate(rejmat, indmat, diffmat, c, k);
+    return R_NilValue;
 END_RCPP
 }
 

@@ -122,36 +122,22 @@ kmin1 = function(x, k){
 }
 
 # k-largest element
-kmax2 = function(x, k){
-  k = min(length(x), k)
-  partial_sort_dec(x, k)[k]
-}
-
-# k-smallest element
-kmin2 = function(x, k){
-  k = min(length(x), k)
-  partial_sort_inc(x, k)[k]
-}
-
-# k-largest element
 kmax3 = function(x, k){
   k = min(length(x), k)
-  x[top_i_pq(x, k)[k]]
+  x[top_index(x, k)]
 }
 
 # k-smallest element
 kmin3 = function(x, k){
   k = min(length(x), k)
-  -x[top_i_pq(-x, k)[k]]
+  -x[top_index(-x, k)]
 }
 
 k=1000
 microbenchmark::microbenchmark(
   oldmax = kmax1(df$y, k),
-  newmax = kmax2(df$y, k),
   newermax = kmax3(df$y, k),
   oldmin = kmin1(df$y, k),
-  newmin = kmin2(df$y, k),
   times = 1000
 )
 
@@ -191,24 +177,56 @@ microbenchmark::microbenchmark(
   new = newrej(0.5),
   old = oldrej(0.5)
 )
-
-
+profmem(
+  oldrej(0.5)
+)
+profmem(
+  newrej(0.5)
+)
 
 # indupdate
-logmat = matrix(c(F, F, F, F, F, F, F, F, F), 3, 3)
-diffmat = matrix(c(2, 1.2, 0.3, 1.2, 2, 0.7, 0.3, 0.7, 2), 3, 3)
-indmat = matrix(rep(F, 9), 3, 3)
-
-profmem(
-  indupdate(logmat, indmat, diffmat, 0.1, 3)
-)
-testfun = function(){
-  (rejmat & indmat <= c) | !rejmat
+oldind = function(n){
+  logmat = matrix(rep(F, n^2), n, n)
+  diffmat = matrix(runif(n^2), n, n)
+  diffmat[lower.tri(diffmat)] = t(diffmat)[lower.tri(diffmat)]
+  indmat = matrix(rep(F, n^2), n, n)
+  indmat = (logmat & (indmat <= 0.7)) | !logmat
 }
-profmem(
-  testfun()
+newind = function(n){
+  logmat = matrix(rep(F, n^2), n, n)
+  diffmat = matrix(runif(n^2), n, n)
+  diffmat[lower.tri(diffmat)] = t(diffmat)[lower.tri(diffmat)]
+  indmat = matrix(rep(F, n^2), n, n)
+  indupdate(logmat, indmat, diffmat, 0.7, 3)
+}
+
+oldind2 = function(logmat, diffmat, indmat){
+  indmat = (logmat & (indmat <= 0.7)) | !logmat
+  return(indmat)
+}
+newind2 = function(logmat, diffmat, indmat){
+  indupdate(logmat, indmat, diffmat, 0.7, 3)
+}
+
+n = 7500
+logmat = matrix(rep(F, n^2), n, n)
+diffmat = matrix(runif(n^2), n, n)
+diffmat[lower.tri(diffmat)] = t(diffmat)[lower.tri(diffmat)]
+indmat = matrix(rep(F, n^2), n, n)
+
+# A little slower
+microbenchmark::microbenchmark(
+  new = newind(500),
+  old = oldind(500)
 )
 
+# ...but negligible memory footprint
+profmem(
+  oldind2(logmat, diffmat, indmat)
+)
+profmem(
+  newind(logmat, diffmat, indmat)
+)
 
 
 
