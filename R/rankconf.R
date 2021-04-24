@@ -158,9 +158,13 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
 
   # Initialize cluster for parallel processing
   cl = parallel::makeCluster(thr)
+  parallel::clusterExport(
+    cl, varlist=c("kmax", "selfouter"),
+    envir=environment()
+  )
   on.exit(parallel::stopCluster(cl))
 
-  # Initialize with no rejections
+  # Initialize rejection matrix with no rejections
   reject = matrix(F, nrow=length(sig2), ncol=length(sig2))
 
   # Test statistics and SDs
@@ -171,13 +175,7 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
   #     a) Reject all values greater than critical value
   #     b) If k or fewer observations are rejected, then stop
   ind = !is.na(diffmat)
-  n = nrow(sigmat)
   s = sqrt(sig2)
-  parallel::clusterExport(
-    cl, varlist=c("sigmat","ind", "k", "sampfun", "kmax",
-                  "n", "s","distfun", "selfouter"),
-    envir=environment()
-  )
   kmaxdist = parallel::parSapply(
     cl=cl,
     X=rep(list(1), R),
@@ -187,34 +185,16 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
   )
   # Return the quantile of the distribution
   crit = quantile(kmaxdist, probs=1-alpha, names=FALSE)
-  newrej = TRUE
-  reject = diffmat > crit
-  diag(reject) = FALSE
-  gc()
+  numrej = rejupdate(reject, diffmat, crit)
+  cat("\r Step 1. ", numrej, " new rejections.")
 
-  if(sum(reject, na.rm=TRUE) < k){
-    return(reject > 0)
-  }
-  cat("\r Step 1 Total Rejected", sum(reject>0, na.rm=T))
-
-  # Step 2,3,...
+  # Step 2,3,... only if there were at least k rejections in the first step
+  newrej = numrej >= k
   j = 2
   while(newrej){
-    # Most "recent" k-1 rejections. Equivalently, the k-1 least significant
-    # tests that have already been rejected
-    if(k==1){
-      recentrej = !reject
-    }else{
-      recentrej = reject & (diffmat <= kmin(x=diffmat[reject], k=k-1))
-    }
-
     # Calculate critical value over unrejected tests and k-1 least significant
     # tests that have already been rejected
-    ind = (!reject | recentrej) & !is.na(diffmat)
-    parallel::clusterExport(
-      cl, varlist="ind",
-      envir=environment()
-    )
+    indupdate(reject, ind, diffmat, kmin(x=diffmat[reject], k=k-1), k)
     kmaxdist = parallel::parSapply(
       cl=cl,
       X=rep(list(1), R),
@@ -222,18 +202,20 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
         sampfun, list(sigmat=sigmat, ind=ind, k=k, distfun=distfun, sd=s)
       )
     )
-    # Return the quantile of the distribution
-    crit = quantile(kmaxdist, probs=1-alpha, names=FALSE)
-    reject[!reject] = j*(diffmat[!reject] > crit)
-    diag(reject) = FALSE
-    gc()
 
-    if(!any(reject==j)){
-      newrej = FALSE
-    }
-    cat("\r Step", j)
+    # Find the 1-alpha quantile of the distribution
+    crit = quantile(kmaxdist, probs=1-alpha, names=FALSE)
+
+    # Update the rejection matrix based on the 1-alpha critical value
+    # Continue if there are any new rejections
+    numrej = rejupdate(reject, diffmat, crit)
+    newrej = numrej > 0
+
+    # Display status
+    cat("\r Step", j,". ", numrej, " new rejections.")
     flush.console()
     j = j + 1
+    gc()
   }
-  return(reject > 0)
+  return(reject)
 }

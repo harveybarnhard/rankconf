@@ -23,7 +23,7 @@ simfun = function(n, g, r, nullprop=0){
   return(df)
 }
 
-df = simfun(50, 750, 0.8, nullprop=0)
+df = simfun(50, 400, 0.8, nullprop=0)
 
 profvis::profvis({
   rankconf(df$yhat, df$sig2, type="BKFWER", k=500)
@@ -52,36 +52,52 @@ ggplot(df, aes(x=rank(yhat), y=rank(y))) +
   xlab("Estimated Rank") + ylab("True Rank")
 
 sum(rank(df$y) >= test3$L & df$y <= test3$U)
+
 # Sampfun ======================================================================
 diffmat = matrix(selfouter(df$y, '-')/sqrt(selfouter(df$sig2, "+")), nrow(df), nrow(df))
 diag(diffmat) = NA
 sigmat = sqrt(selfouter(df$sig2, FUN = "+"))
-ind = !is.na(diffmat)
-sigmatind = sigmat[ind]
+ind = sample(c(T, F), size=length(sigmat), replace=T, prob = c(0.8, 0.2))
+sd = sqrt(df$sig2)
+n  = nrow(df)
 
-sampfun = function(sigmatind, ind, k, sd){
+sampfun1 = function(sigmat, ind, k, sd){
   booty = Rfast::Rnorm(length(sd), m=0, s=1)*sd
   return(
     kmax(
-      abs(selfouter(booty, "-")[ind]/sigmatind),
+      abs(selfouter(booty, "-")[ind]/sigmat[ind]),
       k
     )
   )
 }
-sd = sqrt(df$sig2)
-n  = nrow(df)
+# Function that returns one bootstrap sample of the kth largest value
+sampfun2 = function(sigmat, ind, k, distfun, ...){
+  return(
+    kmax(
+      abs(selfouter(Rfast::Rnorm(length(sigmat), m=0, s=1)*sd, "-")[ind]/sigmat[ind]),
+      k
+    )
+  )
+}
+# Function that returns one bootstrap sample of the kth largest value
+sampfun3 = function(sigmat, ind, k, distfun, ...){
+  return(
+    kmax(
+      abs(matrix(selfouter(Rfast::Rnorm(length(sd), m=0, s=1)*sd, "-"))/sigmat[ind]),
+      k
+    )
+  )
+}
+
+microbenchmark::microbenchmark(
+  sampfun1(sigmat, ind, 400, sd),
+  sampfun2(sigmat, ind, 400, sd)
+)
+
 profvis::profvis({
   sampfun(sigmatind, ind, 800, sd)
 })
-profvis::profvis({
-  sampfun(sigmat[ind], ind, nrow(df), sd)
-})
-profvis::profvis({
-  sampfun2(sigmat, ind, nrow(df), sd)
-})
-profvis::profvis({
-  abs(selfouter(df$y, "-")[ind]/sigmatind)
-})
+
 # kmax =========================================================================
 # k-largest element
 kmax1 = function(x, k){
@@ -148,9 +164,54 @@ for(i in 1:length(nvec)){
   res[i] = object.size(matrix(runif(n^2), n, n))
 }
 
-# Sparse matrices =============================================================
+# Sparse matrices ==============================================================
 library(Matrix)
 n=1000
 m = list()
 m[[1]] = matrix(sample(c(T,F), n^2, replace=T, prob=c(0.5,0.5)), n, n)
 m[[2]] = Matrix(sample(c(T,F), n^2, replace=T, prob=c(0.5,0.5)), n, n)
+
+
+# In-place matrix operations ===================================================
+
+oldrej = function(c){
+  logmat = matrix(c(F, F, F, F, F, F, F, F, F), 3, 3)
+  diffmat = matrix(c(2, 1.2, 0.3, 1.2, 2, 0.7, 0.3, 0.7, 2), 3, 3)
+  logmat[!logmat] = logmat[!logmat] > c
+  diag(logmat) = F
+}
+
+newrej = function(c){
+  logmat = matrix(c(F, F, F, F, F, F, F, F, F), 3, 3)
+  diffmat = matrix(c(2, 1.2, 0.3, 1.2, 2, 0.7, 0.3, 0.7, 2), 3, 3)
+  rejupdate(logmat, diffmat, c)
+}
+
+microbenchmark::microbenchmark(
+  new = newrej(0.5),
+  old = oldrej(0.5)
+)
+
+
+
+# indupdate
+logmat = matrix(c(F, F, F, F, F, F, F, F, F), 3, 3)
+diffmat = matrix(c(2, 1.2, 0.3, 1.2, 2, 0.7, 0.3, 0.7, 2), 3, 3)
+indmat = matrix(rep(F, 9), 3, 3)
+
+profmem(
+  indupdate(logmat, indmat, diffmat, 0.1, 3)
+)
+testfun = function(){
+  (rejmat & indmat <= c) | !rejmat
+}
+profmem(
+  testfun()
+)
+
+
+
+
+
+
+

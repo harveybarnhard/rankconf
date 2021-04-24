@@ -25,6 +25,5 @@ kmin = function(x, k){
 # ~3x as fast relative to base::outer()
 #' @export
 selfouter = function(x, FUN="+"){
-  FUN = match.fun(FUN)
-  FUN(x, rep(x, rep.int(length(x), length(x))))
+  match.fun(FUN)(x, rep(x, rep.int(length(x), length(x))))
 }
