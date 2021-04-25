@@ -40,12 +40,14 @@ rankconf = function(y,
   # Calculate naive one-sided p-values of all differences
   diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
   if(type!="BKFWER"){
+    diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
     pvals = 1-pnorm(diffmat)
   }else{
     pvals = NA
-    diffmat = abs(diffmat)
+    diffmat = abs(matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n))
+    diag(diffmat) = NA
   }
-  gc(verbose)
+  gc()
 
   # Find which tests to reject using the given method
   reject = do.call(paste0("rej", type), list(diffmat=diffmat,
@@ -60,15 +62,19 @@ rankconf = function(y,
   # Create a "reject and positive difference" matrix.
   # A TRUE in the [i,j]th index indicates that the ith observation is
   # significantly better than the jth observation.
-  diffpos = (diffmat > 0) & reject & !is.na(diffmat)
-
+  if(type=="BKFWER"){
+    diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
+  }
+  diffmat = (diffmat > 0) & reject & !is.na(diffmat)
+  rm(reject)
+  gc()
   # Calculate number of ranks above and below.
   # Summing over the jth column is equivalent to adding up the number of
   # observations that are significantly worse than the jth observation.
   # Summing over the ith row is equivalent to adding up the number of
   # observations that are significantly better than the ith observation.
-  lowerrank = rowSums(diffpos) + 1
-  upperrank = n - colSums(diffpos)
+  lowerrank = rowSums(diffmat) + 1
+  upperrank = n - colSums(diffmat)
   return(list(
     L = lowerrank,
     U = upperrank
@@ -137,11 +143,11 @@ rejKFWER = function(pvals, alpha, k, ...){
 # (REKFWER) https://arxiv.org/pdf/0710.2258.pdf Algorithm 2.2 ==================
 
 # Function that returns one bootstrap sample of the kth largest value
-sampfun = function(sigmat, ind, k, distfun, ...){
+sampfun = function(sigmat, k, distfun, ...){
   booty = do.call(distfun, list(...))
   return(
     kmax(
-      abs(selfouter(booty, "-")[ind]/sigmat[ind]),
+      abs(selfouter(booty, "-")/sigmat),
       k
     )
   )
@@ -167,20 +173,23 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
   # Initialize rejection matrix with no rejections
   reject = matrix(F, nrow=length(sig2), ncol=length(sig2))
 
-  # Test statistics and SDs
-  diag(diffmat) = NA
-  sigmat = sqrt(selfouter(sig2, FUN = "+"))
+  # Calculate size of sample to include in each resample
+  n = nrow(diffmat)
+  numind = n^2 - n
+
+  #  Create covariance matrix of test statistics
+  sigmat = sqrt(matrix(selfouter(sig2, FUN = "+"), n, n))
+  diag(sigmat) = -diag(sigmat)
 
   # Step 1, calculate 1-alpha critical values
   #     a) Reject all values greater than critical value
   #     b) If k or fewer observations are rejected, then stop
-  ind = !is.na(diffmat)
   s = sqrt(sig2)
   kmaxdist = parallel::parSapply(
     cl=cl,
     X=rep(list(1), R),
     FUN=function(x) do.call(
-      sampfun, list(sigmat=sigmat, ind=ind, k=k, distfun=distfun, sd=s)
+      sampfun, list(sigmat=sigmat, k=k, distfun=distfun, sd=s)
     )
   )
   # Return the quantile of the distribution
@@ -194,12 +203,17 @@ rejBKFWER = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, ..
   while(newrej){
     # Calculate critical value over unrejected tests and k-1 least significant
     # tests that have already been rejected
-    indupdate(reject, ind, diffmat, kmin(x=diffmat[reject], k=k-1), k)
+    if(k > 1) {
+      c = kmin(x=diffmat[reject], k=k-1)
+    }else {
+      c = NA
+    }
+    numind = sigupdate(reject, sigmat, diffmat, c, numind, k)
     kmaxdist = parallel::parSapply(
       cl=cl,
       X=rep(list(1), R),
       FUN=function(x) do.call(
-        sampfun, list(sigmat=sigmat, ind=ind, k=k, distfun=distfun, sd=s)
+        sampfun, list(sigmat=sigmat, k=k, distfun=distfun, sd=s)
       )
     )
 

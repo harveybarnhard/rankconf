@@ -1,14 +1,3 @@
-# k-largest elements
-kmax = function(x, k){
-  k = min(length(x), k)
-  if(k > 800){
-    p = length(x) - k + 1
-    sort(x, partial=p, decreasing=F)[p]
-  }else{
-    x[kit::topn(x, k, decreasing=T)[k]]
-  }
-}
-
 # k-smallest elements
 kmin = function(x, k){
   k = min(length(x), k)

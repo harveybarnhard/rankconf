@@ -1,14 +1,11 @@
 #include <Rcpp.h>
 #include <queue>
+#include <utility>
 using namespace Rcpp;
 using namespace std;
 
-// Goal here is to update the reject matrix in place based on the difference
-// matrix and the critical value. The output will be the number of new
-// rejections.
-
 //' Update the symmetric rejection matrix in place based on what values of
-//' the difference matrix are greater than the provided critical value
+//' the difference matrix are greater than the provided critical value.
 //' @param rejmat The rejection matrix
 //' @param diffmat The difference matrix
 //' @param c A constant
@@ -16,9 +13,10 @@ using namespace std;
 // [[Rcpp::export]]
 int rejupdate(LogicalMatrix &rejmat,
               NumericMatrix const &diffmat,
-              double const &c) {
+              double const c) {
   int nr = rejmat.nrow();
   int out = 0;
+
   for(int i = 0; i < nr; i++) {
     for(int j = 0; j < i; j++) {
       if((diffmat(i,j) > c) & !rejmat(i,j)) {
@@ -31,7 +29,7 @@ int rejupdate(LogicalMatrix &rejmat,
   return out;
 }
 
-//' Update sampling indicator matrix
+//' Update sampling indicator matrix, in place modifications
 //' @param rejmat The rejection matrix
 //' @param indmat The sample indicator matrix
 //' @param diffmat The difference matrix
@@ -39,33 +37,47 @@ int rejupdate(LogicalMatrix &rejmat,
 //' @param k The k in k-FWER
 //' @export
 // [[Rcpp::export]]
-void indupdate(LogicalMatrix const &rejmat,
-               LogicalMatrix &indmat,
+int sigupdate(LogicalMatrix const &rejmat,
+               NumericMatrix &sigmat,
                NumericMatrix const &diffmat,
                double const c,
+               int &numind,
                int const k) {
   int nr = rejmat.nrow();
   if(k > 1) {
     for(int i = 0; i < nr; i++) {
       for(int j = 0; j < i; j++) {
-        if(!indmat(i,j) & (diffmat(i,j) <= c)) {
-          indmat(i,j) = 1;
-          indmat(j,i) = 1;
-        } else if(indmat(i,j) & rejmat(i,j)){
-          indmat(i,j) = 0;
-          indmat(j,i) = 0;
+        if((sigmat(i,j) < 0) & (diffmat(i,j) <= c)) {
+          sigmat(i,j) = -sigmat(i,j);
+          sigmat(j,i) = -sigmat(i,j);
+          numind += 2;
+        } else if((sigmat(i,j) > 0) & rejmat(i,j)){
+          sigmat(i,j) = -sigmat(i,j);
+          sigmat(j,i) = -sigmat(i,j);
+          numind -= 2;
         }
       }
     }
   } else if(k==1) {
     for(int i = 0; i < nr; i++) {
       for(int j = 0; j < i; j++) {
-        if(indmat(i,j) & rejmat(i,j)) {
-          indmat(i,j) = 0;
-          indmat(j,i) = 0;
+        if((sigmat(i,j) > 0) & rejmat(i,j)) {
+          sigmat(i,j) = -sigmat(i,j);
+          sigmat(j,i) = -sigmat(i,j);
+          numind -= 2;
         }
       }
     }
   }
+  return numind;
 }
 
+bool compfun (double a, double b) { return (a > b); }
+
+//' Returns the kth largest value by sorting in place
+//' @export
+// [[Rcpp::export]]
+double kmax(NumericVector &x, int const k) {
+  std::nth_element(x.begin(), x.begin() + k - 1, x.end(), compfun);
+  return x(k - 1);
+}

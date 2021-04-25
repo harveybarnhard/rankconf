@@ -3,7 +3,7 @@
 \name{rejupdate}
 \alias{rejupdate}
 \title{Update the symmetric rejection matrix in place based on what values of
-the difference matrix are greater than the provided critical value}
+the difference matrix are greater than the provided critical value.}
 \usage{
 rejupdate(rejmat, diffmat, c)
 }
@@ -16,5 +16,5 @@ rejupdate(rejmat, diffmat, c)
 }
 \description{
 Update the symmetric rejection matrix in place based on what values of
-the difference matrix are greater than the provided critical value
+the difference matrix are greater than the provided critical value.
 }

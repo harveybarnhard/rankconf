@@ -26,28 +26,30 @@ simfun = function(n, g, r, nullprop=0){
 df = simfun(50, 400, 0.8, nullprop=0)
 
 profvis::profvis({
-  rankconf(df$yhat, df$sig2, type="BKFWER", k=500)
+  csranks::csranks(-df$yhat, sqrt(df$sig2))
 })
 
 profvis::profvis({
-  rankconf(df$yhat, df$sig2, type="BKFWER", k=500, thr=parallel::detectCores()-1)
+  rankconf(df$yhat, df$sig2, type="BKFWER", k=1, thr=parallel::detectCores()-1)
 })
+test = profmem(
+  rankconf(df$yhat, df$sig2, type="BKFWER", k=1, thr=parallel::detectCores()-1)
+)
 
 test = list()
 test[["Mogstad"]] = csranks::csranks(-df$yhat, sqrt(df$sig2))
 test[["1-FWER"]] = rankconf(df$yhat, df$sig2, type="BKFWER", k=1, thr=parallel::detectCores()-1)
 test[["10-FWER"]] = rankconf(df$yhat, df$sig2, type="BKFWER", k=10, thr=parallel::detectCores()-1)
-test[["500-FWER"]] = rankconf(df$yhat, df$sig2, type="BKFWER", k=100, thr=parallel::detectCores()-1)
+test[["500-FWER"]] = rankconf(df$yhat, df$sig2, type="BKFWER", k=500, thr=parallel::detectCores()-1)
 test[["FDR"]] = rankconf(df$yhat, df$sig2, type="FDR", alpha=0.05)
 
+library(ggplot2)
 ggplot(df, aes(x=rank(yhat), y=rank(y))) +
   geom_point() +
   geom_point(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$L, color="black")) +
   geom_point(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$U, color="black")) +
-  geom_point(mapping=aes(x=rank(df$yhat), y=test[["500-FWER"]]$L, color="blue")) +
-  geom_point(mapping=aes(x=rank(df$yhat), y=test[["500-FWER"]]$U, color="blue")) +
-  geom_point(mapping=aes(x=rank(df$yhat), y=test[["FDR"]]$L, color="red")) +
-  geom_point(mapping=aes(x=rank(df$yhat), y=test[["FDR"]]$U, color="red")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["1-FWER"]]$L, color="blue")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["1-FWER"]]$U, color="blue")) +
   theme_classic() +
   xlab("Estimated Rank") + ylab("True Rank")
 
@@ -72,9 +74,10 @@ sampfun1 = function(sigmat, ind, k, sd){
 }
 # Function that returns one bootstrap sample of the kth largest value
 sampfun2 = function(sigmat, ind, k, distfun, ...){
+  booty = Rfast::Rnorm(length(sd), m=0, s=1)*sd
   return(
     kmax(
-      abs(selfouter(Rfast::Rnorm(length(sigmat), m=0, s=1)*sd, "-")[ind]/sigmat[ind]),
+      abs(selfouter(booty, "-")/sigmat)[ind],
       k
     )
   )
@@ -83,7 +86,7 @@ sampfun2 = function(sigmat, ind, k, distfun, ...){
 sampfun3 = function(sigmat, ind, k, distfun, ...){
   return(
     kmax(
-      abs(matrix(selfouter(Rfast::Rnorm(length(sd), m=0, s=1)*sd, "-"))/sigmat[ind]),
+      abs(selfouter(Rfast::Rnorm(length(sd), m=0, s=1)*sd, "-")/sigmat)[ind],
       k
     )
   )
@@ -91,7 +94,13 @@ sampfun3 = function(sigmat, ind, k, distfun, ...){
 
 microbenchmark::microbenchmark(
   sampfun1(sigmat, ind, 400, sd),
-  sampfun2(sigmat, ind, 400, sd)
+  sampfun2(sigmat, ind, 400, sd),
+  sampfun3(sigmat, ind, 400, sd),
+  times=1000
+)
+
+profmem(
+  sampfun3(sigmat, ind, 400, sd)
 )
 
 profvis::profvis({
@@ -101,6 +110,7 @@ profvis::profvis({
 # kmax =========================================================================
 # k-largest element
 kmax1 = function(x, k){
+  x = runif(10000)
   k = min(length(x), k)
   if(k > 800){
     p = length(x) - k + 1
@@ -111,33 +121,16 @@ kmax1 = function(x, k){
 }
 
 # k-smallest element
-kmin1 = function(x, k){
+kmax2 = function(x, k){
+  x = runif(10000)
   k = min(length(x), k)
-  if(k > 800){
-    p = length(x) - k + 1
-    -sort(-x, partial=p, decreasing=F)[p]
-  }else{
-    x[kit::topn(x, k, decreasing=F)[k]]
-  }
+  newkmax(x, k)
 }
 
-# k-largest element
-kmax3 = function(x, k){
-  k = min(length(x), k)
-  x[top_index(x, k)]
-}
-
-# k-smallest element
-kmin3 = function(x, k){
-  k = min(length(x), k)
-  -x[top_index(-x, k)]
-}
-
-k=1000
+k=300
 microbenchmark::microbenchmark(
-  oldmax = kmax1(df$y, k),
-  newermax = kmax3(df$y, k),
-  oldmin = kmin1(df$y, k),
+  oldmax    = kmax1(df$y, k),
+  newestmax = kmax2(df$y, k),
   times = 1000
 )
 
@@ -228,6 +221,12 @@ profmem(
   newind(logmat, diffmat, indmat)
 )
 
+
+# ==============================================================================
+microbenchmark::microbenchmark(
+  top_n(runif(1000), 100),
+  kmax(runif(1000), 100)
+)
 
 
 

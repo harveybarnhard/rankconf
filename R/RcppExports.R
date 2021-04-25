@@ -2,7 +2,7 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' Update the symmetric rejection matrix in place based on what values of
-#' the difference matrix are greater than the provided critical value
+#' the difference matrix are greater than the provided critical value.
 #' @param rejmat The rejection matrix
 #' @param diffmat The difference matrix
 #' @param c A constant
@@ -11,14 +11,20 @@ rejupdate <- function(rejmat, diffmat, c) {
     .Call(`_rankconf_rejupdate`, rejmat, diffmat, c)
 }
 
-#' Update sampling indicator matrix
+#' Update sampling indicator matrix, in place modifications
 #' @param rejmat The rejection matrix
 #' @param indmat The sample indicator matrix
 #' @param diffmat The difference matrix
 #' @param c The constant for checking already-rejected values
 #' @param k The k in k-FWER
 #' @export
-indupdate <- function(rejmat, indmat, diffmat, c, k) {
-    invisible(.Call(`_rankconf_indupdate`, rejmat, indmat, diffmat, c, k))
+sigupdate <- function(rejmat, sigmat, diffmat, c, numind, k) {
+    .Call(`_rankconf_sigupdate`, rejmat, sigmat, diffmat, c, numind, k)
+}
+
+#' Returns the kth largest value by sorting in place
+#' @export
+kmax <- function(x, k) {
+    .Call(`_rankconf_kmax`, x, k)
 }
 
