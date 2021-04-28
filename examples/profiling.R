@@ -44,12 +44,14 @@ test[["500-FWER"]] = rankconf(df$yhat, df$sig2, type="BKFWER", k=500, thr=parall
 test[["FDR"]] = rankconf(df$yhat, df$sig2, type="FDR", alpha=0.05)
 
 library(ggplot2)
-ggplot(df, aes(x=rank(yhat), y=rank(y))) +
+ggplot(df, aes(x=rank(df$yhat), y=rank(df$y))) +
   geom_point() +
-  geom_point(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$L, color="black")) +
-  geom_point(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$U, color="black")) +
-  geom_point(mapping=aes(x=rank(df$yhat), y=test[["1-FWER"]]$L, color="blue")) +
-  geom_point(mapping=aes(x=rank(df$yhat), y=test[["1-FWER"]]$U, color="blue")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$L, color="1-FWER")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["Mogstad"]]$U, color="1-FWER")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["10-FWER"]]$L, color="10-FWER")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["10-FWER"]]$U, color="10-FWER")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["FDR"]]$L, color="FDR")) +
+  geom_point(mapping=aes(x=rank(df$yhat), y=test[["FDR"]]$U, color="FDR")) +
   theme_classic() +
   xlab("Estimated Rank") + ylab("True Rank")
 
