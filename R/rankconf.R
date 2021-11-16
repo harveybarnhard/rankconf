@@ -140,7 +140,7 @@ rejKFWER = function(pvals, alpha, k, ...){
   return(pranks < min_rank)
 }
 
-# (REKFWER) https://arxiv.org/pdf/0710.2258.pdf Algorithm 2.2 ==================
+# (BKFWER) https://arxiv.org/pdf/0710.2258.pdf Algorithm 2.2 ==================
 
 # Function that returns one bootstrap sample of the kth largest value
 sampfun = function(sigmat, k, distfun, ...){
