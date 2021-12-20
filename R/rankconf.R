@@ -3,18 +3,19 @@
 #' @param y estimates
 #' @param sig2 variance of estimates
 #' @param type What error should be controlled?
-#' @param alpha The rate at which the error should be controlled. 0.05 by default
-#' @param k For k-FWER, number of errors to be bounded
+#' @param method What method should be used to control error rates?
+#' @param alpha The rate at which the error should be controlled. 0.05 by default.
+#' @param k Number of errors to control, used for familywise error rates. 1 by default.
 #' @param best "min" for rank 1 to correspond to lowest estimate.
 #' "max" for rank 1 to correspond to greatest estimate.
-#' @param thr Number of threads to utilize. Number of cores minus one by default
+#' @param thr Number of threads to use for parallel processing. Number of cores minus one by default.
 #' @export
 rankconf = function(y,
                     sig2,
                     type="PCER",
                     method="NAIVE",
                     alpha=0.05,
-                    k=NA,
+                    k=1,
                     best="min",
                     thr=parallel::detectCores()-1,
                     verbose=F){
