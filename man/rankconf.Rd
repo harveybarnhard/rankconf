@@ -7,12 +7,12 @@
 rankconf(
   y,
   sig2,
-  type = "FDR",
+  type = "PCER",
+  method = "NAIVE",
   alpha = 0.05,
-  k = NA,
+  k = 1,
   best = "min",
-  thr = parallel::detectCores() - 1,
-  verbose = F
+  thr = parallel::detectCores() - 1
 )
 }
 \arguments{
@@ -22,14 +22,16 @@ rankconf(
 
 \item{type}{What error should be controlled?}
 
-\item{alpha}{The rate at which the error should be controlled. 0.05 by default}
+\item{method}{What method should be used to control error rates?}
 
-\item{k}{For k-FWER, number of errors to be bounded}
+\item{alpha}{The rate at which the error should be controlled. 0.05 by default.}
+
+\item{k}{Number of errors to control, used for familywise error rates. 1 by default.}
 
 \item{best}{"min" for rank 1 to correspond to lowest estimate.
 "max" for rank 1 to correspond to greatest estimate.}
 
-\item{thr}{Number of threads to utilize. Number of cores minus one by default}
+\item{thr}{Number of threads to use for parallel processing. Number of cores minus one by default.}
 }
 \description{
 Construct confidence intervals around ranks.
