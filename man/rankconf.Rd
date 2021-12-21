@@ -12,7 +12,7 @@ rankconf(
   alpha = 0.05,
   k = 1,
   best = "min",
-  thr = parallel::detectCores() - 1
+  thr = 2
 )
 }
 \arguments{
@@ -31,7 +31,7 @@ rankconf(
 \item{best}{"min" for rank 1 to correspond to lowest estimate.
 "max" for rank 1 to correspond to greatest estimate.}
 
-\item{thr}{Number of threads to use for parallel processing. Number of cores minus one by default.}
+\item{thr}{Number of threads to use for parallel processing. 2 by default.}
 }
 \description{
 Construct confidence intervals around ranks.

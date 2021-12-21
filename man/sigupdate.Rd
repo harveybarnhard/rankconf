@@ -9,13 +9,15 @@ sigupdate(rejmat, sigmat, diffmat, c, numind, k)
 \arguments{
 \item{rejmat}{The rejection matrix}
 
+\item{sigmat}{The sample indicator matrix}
+
 \item{diffmat}{The difference matrix}
 
 \item{c}{The constant for checking already-rejected values}
 
-\item{k}{The k in k-FWER}
+\item{numind}{Size of the sample}
 
-\item{indmat}{The sample indicator matrix}
+\item{k}{The k in k-FWER}
 }
 \description{
 Update sampling indicator matrix, in place modifications

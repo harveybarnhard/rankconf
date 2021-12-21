@@ -8,7 +8,7 @@
 #' @param k Number of errors to control, used for familywise error rates. 1 by default.
 #' @param best "min" for rank 1 to correspond to lowest estimate.
 #' "max" for rank 1 to correspond to greatest estimate.
-#' @param thr Number of threads to use for parallel processing. Number of cores minus one by default.
+#' @param thr Number of threads to use for parallel processing. 2 by default.
 #' @export
 rankconf = function(y,
                     sig2,
@@ -17,7 +17,7 @@ rankconf = function(y,
                     alpha=0.05,
                     k=1,
                     best="min",
-                    thr=parallel::detectCores()-1
+                    thr=2
                     ){
   # Handle Input ===============================================================
   if(any(is.na(y) | is.na(sig2) | sig2 <= 0)){
@@ -54,7 +54,7 @@ rankconf = function(y,
   diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
   diag(diffmat) = NA
   if(!(type=="FWER" & method=="R")){
-    pvals = 1-pnorm(diffmat)
+    pvals = 1-stats::pnorm(diffmat)
   }else{
     pvals = NA
     diffmat = abs(diffmat)

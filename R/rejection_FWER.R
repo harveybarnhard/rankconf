@@ -79,7 +79,7 @@ rej_FWER_R = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, .
     )
   )
   # Return the quantile of the distribution
-  crit = quantile(kmaxdist, probs=1-alpha, names=FALSE)
+  crit = stats::quantile(kmaxdist, probs=1-alpha, names=FALSE)
   numrej = rejupdate(reject, diffmat, crit)
   cat("\r Step 1. ", numrej, " new rejections.")
 
@@ -104,7 +104,7 @@ rej_FWER_R = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, .
     )
 
     # Find the 1-alpha quantile of the distribution
-    crit = quantile(kmaxdist, probs=1-alpha, names=FALSE)
+    crit = stats::quantile(kmaxdist, probs=1-alpha, names=FALSE)
 
     # Update the rejection matrix based on the 1-alpha critical value
     # Continue if there are any new rejections
@@ -113,7 +113,7 @@ rej_FWER_R = function(diffmat, sig2, alpha, k, R=1000, distfun="rnorm", thr=0, .
 
     # Display status
     cat("\r Step", j,". ", numrej, " new rejections.")
-    flush.console()
+    utils::flush.console()
     j = j + 1
     gc()
   }

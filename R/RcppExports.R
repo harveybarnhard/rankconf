@@ -6,24 +6,24 @@
 #' @param rejmat The rejection matrix
 #' @param diffmat The difference matrix
 #' @param c A constant
-#' @export
 rejupdate <- function(rejmat, diffmat, c) {
     .Call(`_rankconf_rejupdate`, rejmat, diffmat, c)
 }
 
 #' Update sampling indicator matrix, in place modifications
 #' @param rejmat The rejection matrix
-#' @param indmat The sample indicator matrix
+#' @param sigmat The sample indicator matrix
 #' @param diffmat The difference matrix
 #' @param c The constant for checking already-rejected values
+#' @param numind Size of the sample
 #' @param k The k in k-FWER
-#' @export
 sigupdate <- function(rejmat, sigmat, diffmat, c, numind, k) {
     .Call(`_rankconf_sigupdate`, rejmat, sigmat, diffmat, c, numind, k)
 }
 
 #' Returns the kth largest value by sorting in place
-#' @export
+#' @param x Numeric vector.
+#' @param k Specifies the kth largest value.
 kmax <- function(x, k) {
     .Call(`_rankconf_kmax`, x, k)
 }

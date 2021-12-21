@@ -6,7 +6,7 @@ rankplot = function(y, L, U, size=1, title="", highlight=c(0,0)) {
   color[U < lowtail] = "good"
   color[L > uptail]  = "bad"
   g = ggplot2::ggplot(data=data.frame(ranky, L, U, color)) +
-    ggplot2::geom_linerange(mapping=aes(x=ranky, ymin=L, ymax=U, colour=color),
+    ggplot2::geom_linerange(mapping=ggplot2::aes(x=ranky, ymin=L, ymax=U, colour=color),
                    size=size) +
     ggplot2::xlab("") + ggplot2::ylab("") +
     ggplot2::scale_x_continuous(expand=c(0.01,0.01)) +

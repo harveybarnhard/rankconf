@@ -1,4 +1,6 @@
-# k-smallest elements
+#' kthe smallest element
+#' @description Finds the kth smallest element of a numeric vector.
+#' @keywords internal
 kmin = function(x, k){
   k = min(length(x), k)
   if(k > 800){
@@ -11,8 +13,9 @@ kmin = function(x, k){
 
 
 
-# ~3x as fast relative to base::outer()
-#' @export
+#' ~3x as fast relative to base::outer()
+#' @description Produces an outer product of a single vector with itself.
+#' @keywords internal
 selfouter = function(x, FUN="+"){
   match.fun(FUN)(x, rep(x, rep.int(length(x), length(x))))
 }

@@ -9,7 +9,6 @@ using namespace std;
 //' @param rejmat The rejection matrix
 //' @param diffmat The difference matrix
 //' @param c A constant
-//' @export
 // [[Rcpp::export]]
 int rejupdate(LogicalMatrix &rejmat,
               NumericMatrix const &diffmat,
@@ -31,11 +30,11 @@ int rejupdate(LogicalMatrix &rejmat,
 
 //' Update sampling indicator matrix, in place modifications
 //' @param rejmat The rejection matrix
-//' @param indmat The sample indicator matrix
+//' @param sigmat The sample indicator matrix
 //' @param diffmat The difference matrix
 //' @param c The constant for checking already-rejected values
+//' @param numind Size of the sample
 //' @param k The k in k-FWER
-//' @export
 // [[Rcpp::export]]
 int sigupdate(LogicalMatrix const &rejmat,
                NumericMatrix &sigmat,
@@ -75,7 +74,8 @@ int sigupdate(LogicalMatrix const &rejmat,
 bool compfun (double a, double b) { return (a > b); }
 
 //' Returns the kth largest value by sorting in place
-//' @export
+//' @param x Numeric vector.
+//' @param k Specifies the kth largest value.
 // [[Rcpp::export]]
 double kmax(NumericVector &x, int const k) {
   std::nth_element(x.begin(), x.begin() + k - 1, x.end(), compfun);

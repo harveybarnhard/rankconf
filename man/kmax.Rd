@@ -6,6 +6,11 @@
 \usage{
 kmax(x, k)
 }
+\arguments{
+\item{x}{Numeric vector.}
+
+\item{k}{Specifies the kth largest value.}
+}
 \description{
 Returns the kth largest value by sorting in place
 }
