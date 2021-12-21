@@ -19,7 +19,9 @@ typel = list(
 for(i in 1:length(typel)) {
   test_that(paste0("Testing type: ", typel[[i]][1], " with method: ", typel[[i]][2]), {
     output = rankconf(
-      df$kfr_p25, sig2=df$kfr_p25_se^2, type=typel[[i]][1], method=typel[[i]][2]
+      df$kfr_p25, sig2=df$kfr_p25_se^2,
+      type=typel[[i]][1], method=typel[[i]][2],
+      best="max"
     )
     expect_true(all(output$L <= output$U))
     expect_true(all(output$L >= 1 & output$L <= n))

@@ -50,6 +50,19 @@ rankconf = function(y,
     y = -y
   }
 
+  # Frequentist multiple testing methods
+  if(type%in%c("PCER","FDR", "FWER")) {
+    output = rankconf_multitest(n, y, sig2, type, method, alpha, k, thr)
+  }
+  # Bayesian posterior inference methods
+  else if(type%in%c("BAYES")) {
+    output = rankconf_bayes(n, y, sig2, type, method, alpha, thr)
+  }
+  return(output)
+}
+
+# Frequentist multiple testing methods =========================================
+rankconf_multitest = function(n, y, sig2, type, method, alpha, k, thr) {
   # Calculate naive one-sided p-values of all differences
   diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
   diag(diffmat) = NA
@@ -96,4 +109,9 @@ rankconf = function(y,
     L = lowerrank,
     U = upperrank
   ))
+}
+
+# Bayesian posterior inference methods =========================================
+rankconf_bayes = function(n, y, sig2, type, method, alpha, thr) {
+
 }
