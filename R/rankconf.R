@@ -17,15 +17,14 @@ rankconf = function(y,
                     alpha=0.05,
                     k=1,
                     best="min",
-                    thr=parallel::detectCores()-1,
-                    verbose=F){
+                    thr=parallel::detectCores()-1
+                    ){
   # Handle Input ===============================================================
   if(any(is.na(y) | is.na(sig2) | sig2 <= 0)){
     stop("y and sig2 must not contain NA values, and sig2 must be positive")
   }
 
   # Make sure error types exist and an appropriate method is called
-  # TODO: Separate this between error rates and methods to control error rates
   type   = toupper(type)
   method = toupper(method)
   if(type=="FDR"){
@@ -53,19 +52,18 @@ rankconf = function(y,
 
   # Calculate naive one-sided p-values of all differences
   diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
+  diag(diffmat) = NA
   if(!(type=="FWER" & method=="R")){
-    diffmat = matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n)
     pvals = 1-pnorm(diffmat)
   }else{
     pvals = NA
-    diffmat = abs(matrix(selfouter(y, '-')/sqrt(selfouter(sig2, "+")), n, n))
-    diag(diffmat) = NA
+    diffmat = abs(diffmat)
   }
   gc()
 
   # Find which tests to reject using the given method
   reject = do.call(
-    paste0("rej", type, method, collapse="_"),
+    paste(c("rej", type, method), collapse="_"),
     list(
       diffmat=diffmat,
       pvals=pvals,
@@ -76,6 +74,7 @@ rankconf = function(y,
       thr=thr
     )
   )
+  print(reject)
   diag(reject) = FALSE
 
   # Create a "reject and positive difference" matrix.
