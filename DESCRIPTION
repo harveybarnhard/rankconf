@@ -13,17 +13,28 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Depends: 
-    R (>= 2.10)
+    R (>= 3.4.0)
 LinkingTo: 
-    Rcpp,
-    RcppArmadillo
+    BH (>= 1.66.0),
+    Rcpp (>= 0.12.0),
+    RcppArmadillo,
+    RcppEigen (>= 0.3.3.3.0),
+    RcppParallel (>= 5.0.1),
+    rstan (>= 2.18.1),
+    StanHeaders (>= 2.18.0)
 Imports: 
-    Rcpp,
-    Rfast,
     data.table,
+    ggplot2,
     kit,
+    methods,
     parallel,
-    ggplot2
+    Rcpp (>= 0.12.0),
+    RcppParallel (>= 5.0.1),
+    Rfast,
+    rstan (>= 2.18.1),
+    rstantools (>= 2.1.1)
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
+Biarch: true
+SystemRequirements: GNU make
