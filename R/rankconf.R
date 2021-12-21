@@ -74,7 +74,6 @@ rankconf = function(y,
       thr=thr
     )
   )
-  print(reject)
   diag(reject) = FALSE
 
   # Create a "reject and positive difference" matrix.
