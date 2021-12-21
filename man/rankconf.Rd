@@ -12,7 +12,10 @@ rankconf(
   alpha = 0.05,
   k = 1,
   best = "min",
-  thr = 2
+  thr = 2,
+  nchains = 4,
+  nwarmup = 1500,
+  niter = 2500
 )
 }
 \arguments{
@@ -32,6 +35,12 @@ rankconf(
 "max" for rank 1 to correspond to greatest estimate.}
 
 \item{thr}{Number of threads to use for parallel processing. 2 by default.}
+
+\item{nchains}{For Bayesian Analysis: How many markov chains?}
+
+\item{nwarmup}{For Bayesian Analysis: How many warmup iterations?}
+
+\item{niter}{For Bayesian Analysis: How many total iterations?}
 }
 \description{
 Construct confidence intervals around ranks.

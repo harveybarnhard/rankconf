@@ -66,9 +66,12 @@ rankconf = function(y,
   }
 
   # Add more data to output
-  output[["data"]][, y := ifelse(best=="max", -y, y)]
-  output[["data"]][, sig2 := sig2]
-  output[["data"]][, y_rank := data.table::frank(y, ties.method="min", na.last=T)]
+  out_data = output[["data"]]
+  print(out_data)
+  out_data$y = ifelse(best=="max", -y, y)
+  out_data$sig2 = sig2
+  out_data$y_rank = data.table::frank(y, ties.method="min", na.last=T)
+  output[["data"]] = out_data
 
 }
 
