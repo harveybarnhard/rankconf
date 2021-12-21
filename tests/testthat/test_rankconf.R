@@ -4,7 +4,7 @@ df = read.csv(
   "https://opportunityinsights.org/wp-content/uploads/2018/10/cz_outcomes_simple.csv"
 )
 cols = c("cz", "czname", "kfr_pooled_pooled_p25", "kfr_pooled_pooled_p25_se")
-df = df[1:20, cols]
+df = df[1:100, cols]
 n  = nrow(df)
 colnames(df) = c("cz", "czname", "kfr_p25", "kfr_p25_se")
 
