@@ -161,6 +161,6 @@ rankconf_bayes = function(n, y, sig2, type, method, alpha, thr, nchains, nwarmup
   )
   return(list(
     data   = out_data,
-    est    = ests
+    y_post = ifelse(best=="max", -ests, ests)
   ))
 }
