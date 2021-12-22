@@ -54,13 +54,10 @@ BEGIN_RCPP
 END_RCPP
 }
 
-RcppExport SEXP _rcpp_module_boot_stan_fit4normal_normal_mod();
-
 static const R_CallMethodDef CallEntries[] = {
     {"_rankconf_rejupdate", (DL_FUNC) &_rankconf_rejupdate, 3},
     {"_rankconf_sigupdate", (DL_FUNC) &_rankconf_sigupdate, 6},
     {"_rankconf_kmax", (DL_FUNC) &_rankconf_kmax, 2},
-    {"_rcpp_module_boot_stan_fit4normal_normal_mod", (DL_FUNC) &_rcpp_module_boot_stan_fit4normal_normal_mod, 0},
     {NULL, NULL, 0}
 };
 

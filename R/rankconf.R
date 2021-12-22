@@ -66,13 +66,10 @@ rankconf = function(y,
   }
 
   # Add more data to output
-  out_data = output[["data"]]
-  print(out_data)
-  out_data$y = ifelse(best=="max", -y, y)
-  out_data$sig2 = sig2
-  out_data$y_rank = data.table::frank(y, ties.method="min", na.last=T)
-  output[["data"]] = out_data
-
+  output[["data"]]$y = ifelse(best=="max", -y, y)
+  output[["data"]]$sig2 = sig2
+  output[["data"]]$y_rank = data.table::frank(y, ties.method="min", na.last=T)
+  return(output)
 }
 
 # Frequentist multiple testing methods =========================================
@@ -117,59 +114,58 @@ rankconf_multitest = function(n, y, sig2, type, method, alpha, k, thr) {
   # observations that are significantly worse than the jth observation.
   # Summing over the ith row is equivalent to adding up the number of
   # observations that are significantly better than the ith observation.
-  lowerrank = rowSums(diffmat) + 1
-  upperrank = n - colSums(diffmat)
-  return(data.table::data.table(
-    L = lowerrank,
-    U = upperrank
-  ))
+  out_data = data.table::data.table(
+    L = rowSums(diffmat) + 1,
+    U = n - colSums(diffmat)
+  )
+  return(list(data = out_data))
 }
 
 # Bayesian posterior inference methods =========================================
-rankconf_bayes = function(n, y, sig2, type, method, alpha, thr, nchains, nwarmup, niter) {
-  # Format the data for Stan
-  geo_data = list(
-    J = nrow(df),
-    y = df$y,
-    sigma = df$y_se
-  )
-
-  # Sample from posterior draws
-  the_fit <- rstan::sampling(
-    stanmodels$normal_normal,    # Stan program
-    data = geo_data,             # named list of data
-    chains = nchains,            # number of Markov chains
-    warmup = nwarmup,            # number of warmup iterations per chain
-    iter = niter,                # total number of iterations per chain
-    cores = thr,                 # number of cores (could use one per chain)
-    refresh = 1                  # show progress
-  )
-
-  # Extract draws for the group-level means
-  ests  = extract(the_fit)$theta
-
-  # Construct all pairwise differences in each posterior draw
-  n = nrow(ests)
-  diffs = matrix(0, nrow=nrow(df), ncol=nrow(df))
-  pb = txtProgressBar(min = 1, max = n, initial = 1, style=3)
-  for(i in 1:n){
-    setTxtProgressBar(pb,i)
-    diffs = ((i-1)*diffs + outer(ests[i,], ests[i,], ">"))/i
-  }
-  close(pb)
-
-  # Construct the rank confidence sets
-  diffs = diffs > 1-alpha
-  lowerrank = rowSums(diffs) + 1
-  upperrank = nrow(diffs) - colSums(diffs)
-
-  # Output the data
-  out_data = data.table::data.table(
-    L = lowerrank,
-    U = upperrank
-  )
-  return(list(
-    data   = out_data,
-    est    = ests
-  ))
-}
+# rankconf_bayes = function(n, y, sig2, type, method, alpha, thr, nchains, nwarmup, niter) {
+#   # Format the data for Stan
+#   geo_data = list(
+#     J = nrow(df),
+#     y = df$y,
+#     sigma = df$y_se
+#   )
+#
+#   # Sample from posterior draws
+#   the_fit <- rstan::sampling(
+#     stanmodels$normal_normal,    # Stan program
+#     data = geo_data,             # named list of data
+#     chains = nchains,            # number of Markov chains
+#     warmup = nwarmup,            # number of warmup iterations per chain
+#     iter = niter,                # total number of iterations per chain
+#     cores = thr,                 # number of cores (could use one per chain)
+#     refresh = 1                  # show progress
+#   )
+#
+#   # Extract draws for the group-level means
+#   ests  = extract(the_fit)$theta
+#
+#   # Construct all pairwise differences in each posterior draw
+#   n = nrow(ests)
+#   diffs = matrix(0, nrow=nrow(df), ncol=nrow(df))
+#   pb = utils::txtProgressBar(min = 1, max = n, initial = 1, style=3)
+#   for(i in 1:n){
+#     utils::setTxtProgressBar(pb,i)
+#     diffs = ((i-1)*diffs + outer(ests[i,], ests[i,], ">"))/i
+#   }
+#   close(pb)
+#
+#   # Construct the rank confidence sets
+#   diffs = diffs > 1-alpha
+#   lowerrank = rowSums(diffs) + 1
+#   upperrank = nrow(diffs) - colSums(diffs)
+#
+#   # Output the data
+#   out_data = data.table::data.table(
+#     L = lowerrank,
+#     U = upperrank
+#   )
+#   return(list(
+#     data   = out_data,
+#     est    = ests
+#   ))
+# }

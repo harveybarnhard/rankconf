@@ -23,6 +23,7 @@ for(i in 1:length(typel)) {
       type=typel[[i]][1], method=typel[[i]][2],
       best="max"
     )
+    output = output$data
     expect_true(all(output$L <= output$U))
     expect_true(all(output$L >= 1 & output$L <= n))
     expect_true(all(output$U >= 1 & output$U <= n))
