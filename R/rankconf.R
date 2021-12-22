@@ -62,7 +62,7 @@ rankconf = function(y,
   }
   # Bayesian posterior inference methods
   else if(type%in%c("BAYES")) {
-    output = rankconf_bayes(n, y, sig2, type, method, alpha, thr)
+    output = rankconf_bayes(n, y, sig2, type, method, alpha, thr, nchains, nwarmup, niter)
   }
 
   # Add more data to output
@@ -122,50 +122,45 @@ rankconf_multitest = function(n, y, sig2, type, method, alpha, k, thr) {
 }
 
 # Bayesian posterior inference methods =========================================
-# rankconf_bayes = function(n, y, sig2, type, method, alpha, thr, nchains, nwarmup, niter) {
-#   # Format the data for Stan
-#   geo_data = list(
-#     J = nrow(df),
-#     y = df$y,
-#     sigma = df$y_se
-#   )
-#
-#   # Sample from posterior draws
-#   the_fit <- rstan::sampling(
-#     stanmodels$normal_normal,    # Stan program
-#     data = geo_data,             # named list of data
-#     chains = nchains,            # number of Markov chains
-#     warmup = nwarmup,            # number of warmup iterations per chain
-#     iter = niter,                # total number of iterations per chain
-#     cores = thr,                 # number of cores (could use one per chain)
-#     refresh = 1                  # show progress
-#   )
-#
-#   # Extract draws for the group-level means
-#   ests  = extract(the_fit)$theta
-#
-#   # Construct all pairwise differences in each posterior draw
-#   n = nrow(ests)
-#   diffs = matrix(0, nrow=nrow(df), ncol=nrow(df))
-#   pb = utils::txtProgressBar(min = 1, max = n, initial = 1, style=3)
-#   for(i in 1:n){
-#     utils::setTxtProgressBar(pb,i)
-#     diffs = ((i-1)*diffs + outer(ests[i,], ests[i,], ">"))/i
-#   }
-#   close(pb)
-#
-#   # Construct the rank confidence sets
-#   diffs = diffs > 1-alpha
-#   lowerrank = rowSums(diffs) + 1
-#   upperrank = nrow(diffs) - colSums(diffs)
-#
-#   # Output the data
-#   out_data = data.table::data.table(
-#     L = lowerrank,
-#     U = upperrank
-#   )
-#   return(list(
-#     data   = out_data,
-#     est    = ests
-#   ))
-# }
+rankconf_bayes = function(n, y, sig2, type, method, alpha, thr, nchains, nwarmup, niter) {
+  # Format the data for Stan
+  stan_data = list(
+    J = n,
+    y = y,
+    sigma = sqrt(sig2)
+  )
+
+  # Sample from posterior draws
+  stan_fit <- rstan::sampling(
+    stanmodels$normal_normal,    # Stan program
+    data = stan_data,             # named list of data
+    chains = nchains,            # number of Markov chains
+    warmup = nwarmup,            # number of warmup iterations per chain
+    iter = niter,                # total number of iterations per chain
+    cores = thr,                 # number of cores (could use one per chain)
+    refresh = 1                  # show progress
+  )
+
+  # Extract draws for the group-level means
+  ests = rstan::extract(stan_fit)$theta
+
+  # Construct all pairwise differences in each posterior draw
+  diffs = matrix(0, nrow=n, ncol=n)
+  pb = utils::txtProgressBar(min = 1, max = n, initial = 1, style=3)
+  for(i in 1:n){
+    utils::setTxtProgressBar(pb,i)
+    diffs = ((i-1)*diffs + outer(ests[i,], ests[i,], ">"))/i
+  }
+  close(pb)
+
+  # Construct the rank credible sets
+  diffs = diffs > 1-alpha
+  out_data = data.table::data.table(
+    L = rowSums(diffs) + 1,
+    U = nrow(diffs) - colSums(diffs)
+  )
+  return(list(
+    data   = out_data,
+    est    = ests
+  ))
+}

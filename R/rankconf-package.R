@@ -9,6 +9,7 @@
 #' @import methods
 #' @import Rcpp
 #' @importFrom rstan sampling
+#' @importFrom rstan extract
 #' @importFrom stats pnorm
 #' @importFrom stats quantile
 #' @importFrom utils flush.console

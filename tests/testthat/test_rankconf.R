@@ -13,7 +13,8 @@ typel = list(
   c("FWER", "B"),
   c("FWER", "HB"),
   c("FWER", "R"),
-  c("FDR", "BY")
+  c("FDR", "BY"),
+  c("BAYES", "")
 )
 
 for(i in 1:length(typel)) {

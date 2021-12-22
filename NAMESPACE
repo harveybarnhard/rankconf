@@ -3,6 +3,7 @@
 export(rankconf)
 import(Rcpp)
 import(methods)
+importFrom(rstan,extract)
 importFrom(rstan,sampling)
 importFrom(stats,pnorm)
 importFrom(stats,quantile)
