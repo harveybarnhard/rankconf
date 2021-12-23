@@ -1,0 +1,31 @@
+---
+title: "rank-inference"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Inference on Ranks}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Load data
+
+```{r load-data}
+df = read.csv(
+  "https://opportunityinsights.org/wp-content/uploads/2018/10/cz_outcomes_simple.csv"
+)
+cols = c("cz", "czname", "kfr_pooled_pooled_p25", "kfr_pooled_pooled_p25_se")
+df = df[1:100, cols]
+n  = nrow(df)
+colnames(df) = c("cz", "czname", "kfr_p25", "kfr_p25_se")
+```
+
+```{r setup}
+library(rankconf)
+```
