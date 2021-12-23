@@ -62,7 +62,7 @@ rankconf = function(y,
   }
   # Bayesian posterior inference methods
   else if(type%in%c("BAYES")) {
-    output = rankconf_bayes(n, y, sig2, type, method, alpha, thr, nchains, nwarmup, niter)
+    output = rankconf_bayes(n, y, sig2, type, method, alpha, thr, best, nchains, nwarmup, niter)
   }
 
   # Add more data to output
@@ -122,7 +122,7 @@ rankconf_multitest = function(n, y, sig2, type, method, alpha, k, thr) {
 }
 
 # Bayesian posterior inference methods =========================================
-rankconf_bayes = function(n, y, sig2, type, method, alpha, thr, nchains, nwarmup, niter) {
+rankconf_bayes = function(n, y, sig2, type, method, alpha, thr, best, nchains, nwarmup, niter) {
   # Format the data for Stan
   stan_data = list(
     J = n,
