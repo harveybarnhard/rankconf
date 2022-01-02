@@ -40,7 +40,7 @@ stan::io::program_reader prog_reader__() {
 class model_normal_normal
   : public stan::model::model_base_crtp<model_normal_normal> {
 private:
-        int J;
+        int n;
         std::vector<double> y;
         std::vector<double> sigma;
 public:
@@ -74,33 +74,33 @@ public:
         try {
             // initialize data block variables from context__
             current_statement_begin__ = 2;
-            context__.validate_dims("data initialization", "J", "int", context__.to_vec());
-            J = int(0);
-            vals_i__ = context__.vals_i("J");
+            context__.validate_dims("data initialization", "n", "int", context__.to_vec());
+            n = int(0);
+            vals_i__ = context__.vals_i("n");
             pos__ = 0;
-            J = vals_i__[pos__++];
-            check_greater_or_equal(function__, "J", J, 0);
+            n = vals_i__[pos__++];
+            check_greater_or_equal(function__, "n", n, 0);
             current_statement_begin__ = 3;
-            validate_non_negative_index("y", "J", J);
-            context__.validate_dims("data initialization", "y", "double", context__.to_vec(J));
-            y = std::vector<double>(J, double(0));
+            validate_non_negative_index("y", "n", n);
+            context__.validate_dims("data initialization", "y", "double", context__.to_vec(n));
+            y = std::vector<double>(n, double(0));
             vals_r__ = context__.vals_r("y");
             pos__ = 0;
-            size_t y_k_0_max__ = J;
+            size_t y_k_0_max__ = n;
             for (size_t k_0__ = 0; k_0__ < y_k_0_max__; ++k_0__) {
                 y[k_0__] = vals_r__[pos__++];
             }
             current_statement_begin__ = 4;
-            validate_non_negative_index("sigma", "J", J);
-            context__.validate_dims("data initialization", "sigma", "double", context__.to_vec(J));
-            sigma = std::vector<double>(J, double(0));
+            validate_non_negative_index("sigma", "n", n);
+            context__.validate_dims("data initialization", "sigma", "double", context__.to_vec(n));
+            sigma = std::vector<double>(n, double(0));
             vals_r__ = context__.vals_r("sigma");
             pos__ = 0;
-            size_t sigma_k_0_max__ = J;
+            size_t sigma_k_0_max__ = n;
             for (size_t k_0__ = 0; k_0__ < sigma_k_0_max__; ++k_0__) {
                 sigma[k_0__] = vals_r__[pos__++];
             }
-            size_t sigma_i_0_max__ = J;
+            size_t sigma_i_0_max__ = n;
             for (size_t i_0__ = 0; i_0__ < sigma_i_0_max__; ++i_0__) {
                 check_greater_or_equal(function__, "sigma[i_0__]", sigma[i_0__], 0);
             }
@@ -115,8 +115,8 @@ public:
             current_statement_begin__ = 8;
             num_params_r__ += 1;
             current_statement_begin__ = 9;
-            validate_non_negative_index("eta", "J", J);
-            num_params_r__ += J;
+            validate_non_negative_index("eta", "n", n);
+            num_params_r__ += n;
         } catch (const std::exception& e) {
             stan::lang::rethrow_located(e, current_statement_begin__, prog_reader__());
             // Next line prevents compiler griping about no return
@@ -165,10 +165,10 @@ public:
             stan::lang::rethrow_located(std::runtime_error(std::string("Variable eta missing")), current_statement_begin__, prog_reader__());
         vals_r__ = context__.vals_r("eta");
         pos__ = 0U;
-        validate_non_negative_index("eta", "J", J);
-        context__.validate_dims("parameter initialization", "eta", "vector_d", context__.to_vec(J));
-        Eigen::Matrix<double, Eigen::Dynamic, 1> eta(J);
-        size_t eta_j_1_max__ = J;
+        validate_non_negative_index("eta", "n", n);
+        context__.validate_dims("parameter initialization", "eta", "vector_d", context__.to_vec(n));
+        Eigen::Matrix<double, Eigen::Dynamic, 1> eta(n);
+        size_t eta_j_1_max__ = n;
         for (size_t j_1__ = 0; j_1__ < eta_j_1_max__; ++j_1__) {
             eta(j_1__) = vals_r__[pos__++];
         }
@@ -220,13 +220,13 @@ public:
             Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> eta;
             (void) eta;  // dummy to suppress unused var warning
             if (jacobian__)
-                eta = in__.vector_constrain(J, lp__);
+                eta = in__.vector_constrain(n, lp__);
             else
-                eta = in__.vector_constrain(J);
+                eta = in__.vector_constrain(n);
             // transformed parameters
             current_statement_begin__ = 12;
-            validate_non_negative_index("theta", "J", J);
-            Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> theta(J);
+            validate_non_negative_index("theta", "n", n);
+            Eigen::Matrix<local_scalar_t__, Eigen::Dynamic, 1> theta(n);
             stan::math::initialize(theta, DUMMY_VAR__);
             stan::math::fill(theta, DUMMY_VAR__);
             // transformed parameters block statements
@@ -236,7 +236,7 @@ public:
             const char* function__ = "validate transformed params";
             (void) function__;  // dummy to suppress unused var warning
             current_statement_begin__ = 12;
-            size_t theta_j_1_max__ = J;
+            size_t theta_j_1_max__ = n;
             for (size_t j_1__ = 0; j_1__ < theta_j_1_max__; ++j_1__) {
                 if (stan::math::is_uninitialized(theta(j_1__))) {
                     std::stringstream msg__;
@@ -282,10 +282,10 @@ public:
         dims__.resize(0);
         dimss__.push_back(dims__);
         dims__.resize(0);
-        dims__.push_back(J);
+        dims__.push_back(n);
         dimss__.push_back(dims__);
         dims__.resize(0);
-        dims__.push_back(J);
+        dims__.push_back(n);
         dimss__.push_back(dims__);
     }
     template <typename RNG>
@@ -306,8 +306,8 @@ public:
         vars__.push_back(mu);
         double tau = in__.scalar_lb_constrain(0);
         vars__.push_back(tau);
-        Eigen::Matrix<double, Eigen::Dynamic, 1> eta = in__.vector_constrain(J);
-        size_t eta_j_1_max__ = J;
+        Eigen::Matrix<double, Eigen::Dynamic, 1> eta = in__.vector_constrain(n);
+        size_t eta_j_1_max__ = n;
         for (size_t j_1__ = 0; j_1__ < eta_j_1_max__; ++j_1__) {
             vars__.push_back(eta(j_1__));
         }
@@ -320,8 +320,8 @@ public:
         try {
             // declare and define transformed parameters
             current_statement_begin__ = 12;
-            validate_non_negative_index("theta", "J", J);
-            Eigen::Matrix<double, Eigen::Dynamic, 1> theta(J);
+            validate_non_negative_index("theta", "n", n);
+            Eigen::Matrix<double, Eigen::Dynamic, 1> theta(n);
             stan::math::initialize(theta, DUMMY_VAR__);
             stan::math::fill(theta, DUMMY_VAR__);
             // do transformed parameters statements
@@ -333,7 +333,7 @@ public:
             (void) function__;  // dummy to suppress unused var warning
             // write transformed parameters
             if (include_tparams__) {
-                size_t theta_j_1_max__ = J;
+                size_t theta_j_1_max__ = n;
                 for (size_t j_1__ = 0; j_1__ < theta_j_1_max__; ++j_1__) {
                     vars__.push_back(theta(j_1__));
                 }
@@ -375,7 +375,7 @@ public:
         param_name_stream__.str(std::string());
         param_name_stream__ << "tau";
         param_names__.push_back(param_name_stream__.str());
-        size_t eta_j_1_max__ = J;
+        size_t eta_j_1_max__ = n;
         for (size_t j_1__ = 0; j_1__ < eta_j_1_max__; ++j_1__) {
             param_name_stream__.str(std::string());
             param_name_stream__ << "eta" << '.' << j_1__ + 1;
@@ -383,7 +383,7 @@ public:
         }
         if (!include_gqs__ && !include_tparams__) return;
         if (include_tparams__) {
-            size_t theta_j_1_max__ = J;
+            size_t theta_j_1_max__ = n;
             for (size_t j_1__ = 0; j_1__ < theta_j_1_max__; ++j_1__) {
                 param_name_stream__.str(std::string());
                 param_name_stream__ << "theta" << '.' << j_1__ + 1;
@@ -402,7 +402,7 @@ public:
         param_name_stream__.str(std::string());
         param_name_stream__ << "tau";
         param_names__.push_back(param_name_stream__.str());
-        size_t eta_j_1_max__ = J;
+        size_t eta_j_1_max__ = n;
         for (size_t j_1__ = 0; j_1__ < eta_j_1_max__; ++j_1__) {
             param_name_stream__.str(std::string());
             param_name_stream__ << "eta" << '.' << j_1__ + 1;
@@ -410,7 +410,7 @@ public:
         }
         if (!include_gqs__ && !include_tparams__) return;
         if (include_tparams__) {
-            size_t theta_j_1_max__ = J;
+            size_t theta_j_1_max__ = n;
             for (size_t j_1__ = 0; j_1__ < theta_j_1_max__; ++j_1__) {
                 param_name_stream__.str(std::string());
                 param_name_stream__ << "theta" << '.' << j_1__ + 1;

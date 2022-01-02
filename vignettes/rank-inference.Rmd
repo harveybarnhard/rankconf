@@ -17,13 +17,25 @@ knitr::opts_chunk$set(
 # Load data
 
 ```{r load-data}
-df = read.csv(
-  "https://opportunityinsights.org/wp-content/uploads/2018/10/cz_outcomes_simple.csv"
+df = data.table::fread(
+  "https://opportunityinsights.org/wp-content/uploads/2018/10/tract_outcomes_simple.csv"
 )
-cols = c("cz", "czname", "kfr_pooled_pooled_p25", "kfr_pooled_pooled_p25_se")
-df = df[1:100, cols]
+cols = c("state", "county", "tract", "kfr_pooled_pooled_p25", "kfr_pooled_pooled_p25_se")
+df = df[!is.na(kfr_pooled_pooled_p25) & state==17 & county%in%c(31,43), ..cols]
+colnames(df) = c("state", "county","tract", "kfr_p25", "kfr_p25_se")
 n  = nrow(df)
-colnames(df) = c("cz", "czname", "kfr_p25", "kfr_p25_se")
+```
+
+```{r deconvolution}
+y = df$kfr_p25 / df$kfr_p25_se
+tau = seq(min(y), max(y), length.out=50)
+result = deconvolveR::deconv(
+  tau=tau, X=y, family="Normal", pDegree=10, c0=0.3, n=100
+)$stats
+
+result = data.table::as.data.table(result)
+ggplot2::ggplot() +
+  geom_line(data=fortify(result), mapping=ggplot2::aes(x=tau, y=g))
 ```
 
 ```{r setup}

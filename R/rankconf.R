@@ -23,7 +23,8 @@ rankconf = function(y,
                     thr=2,
                     nchains=4,
                     nwarmup=1500,
-                    niter=2500
+                    niter=2500,
+                    family="Normal"
                     ){
   # Handle Input ===============================================================
   if(any(is.na(y) | is.na(sig2) | sig2 <= 0)){
@@ -62,7 +63,7 @@ rankconf = function(y,
   }
   # Bayesian posterior inference methods
   else if(type%in%c("BAYES")) {
-    output = rankconf_bayes(n, y, sig2, type, method, alpha, thr, best, nchains, nwarmup, niter)
+    output = rankconf_bayes(n, y, sig2, type, method, alpha, thr, best, nchains, nwarmup, niter, family)
   }
 
   # Add more data to output
@@ -125,15 +126,30 @@ rankconf_multitest = function(n, y, sig2, type, method, alpha, k, thr) {
 rankconf_bayes = function(n, y, sig2, type, method, alpha, thr, best, nchains, nwarmup, niter) {
   # Format the data for Stan
   stan_data = list(
-    J = n,
+    n = n,
     y = y,
     sigma = sqrt(sig2)
   )
 
+  # If method is EMPBAYES then use the empirical Bayes model
+  # with a non-parametric deconvolution estimator for the prior
+  if(method=="EMPBAYES") {
+
+    stan_data[[""]]
+
+    # Fit non-parametric deconvolution estimator
+    tau = seq(min(y), max(y), length.out=20)
+    result = deconvolveR::deconv(
+      tau=tau, X=y, family=family
+    )
+    stan_method = "spline_normal"
+  } else {
+    stan_method = "normal_normal"
+  }
   # Sample from posterior draws
   stan_fit <- rstan::sampling(
-    stanmodels$normal_normal,    # Stan program
-    data = stan_data,             # named list of data
+    with(stanmodels, get(stan_method)), # Stan program
+    data = stan_data,            # named list of data
     chains = nchains,            # number of Markov chains
     warmup = nwarmup,            # number of warmup iterations per chain
     iter = niter,                # total number of iterations per chain

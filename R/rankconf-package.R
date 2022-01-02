@@ -8,6 +8,8 @@
 #' @useDynLib rankconf, .registration = TRUE
 #' @import methods
 #' @import Rcpp
+#' @import deconvolveR
+#' @import data.table
 #' @importFrom rstan sampling
 #' @importFrom rstan extract
 #' @importFrom stats pnorm

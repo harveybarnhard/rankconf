@@ -1,6 +1,6 @@
 library(rankconf)
 
-df = read.csv(
+df = data.table::fread(
   "https://opportunityinsights.org/wp-content/uploads/2018/10/cz_outcomes_simple.csv"
 )
 cols = c("cz", "czname", "kfr_pooled_pooled_p25", "kfr_pooled_pooled_p25_se")

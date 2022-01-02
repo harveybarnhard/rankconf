@@ -1,15 +1,15 @@
 data {
-  int<lower=0> J;          // number of groups
-  real y[J];               // effect estimates
-  real<lower=0> sigma[J];  // s.e. of effect estimates
+  int<lower=0> n;          // number of groups
+  real y[n];               // effect estimates
+  real<lower=0> sigma[n];  // s.e. of effect estimates
 }
 parameters {
   real mu;
   real<lower=0> tau;
-  vector[J] eta;
+  vector[n] eta;
 }
 transformed parameters {
-  vector[J] theta;
+  vector[n] theta;
   theta = mu + tau * eta;
 }
 model {
