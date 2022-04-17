@@ -35,7 +35,9 @@ result = deconvolveR::deconv(
 
 result = data.table::as.data.table(result)
 ggplot2::ggplot() +
-  geom_line(data=fortify(result), mapping=ggplot2::aes(x=tau, y=g))
+  ggplot2::geom_line(
+    data=ggplot2::fortify(result), mapping=ggplot2::aes(x=tau, y=g)
+  )
 ```
 
 ```{r setup}
